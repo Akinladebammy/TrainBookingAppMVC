@@ -1,0 +1,135 @@
+﻿@using TrainBookingAppMVC.DTOs.ResponseModel
+@model BookingResponseModel
+
+@{
+    ViewData["Title"] = "Booking Details";
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+}
+
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">Booking Details</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-lg border-0 large-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Booking Information</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Train:</strong> @Model.TrainName (@Model.TrainNumber)</p>
+                        <p><strong>Route:</strong> @Model.Source to @Model.Destination</p>
+                        <p><strong>Departure:</strong> @TimeZoneInfo.ConvertTimeFromUtc(Model.DepartureTime, timeZone).ToString("g")</p>
+                        <p><strong>Ticket Class:</strong> @Model.TicketClass</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Number of Seats:</strong> @Model.NumberOfSeats</p>
+                        <p><strong>Total Price:</strong> ₦@Model.TotalPrice.ToString("F2")</p>
+                        <p><strong>Booking Date:</strong> @TimeZoneInfo.ConvertTimeFromUtc(Model.BookingDate, timeZone).ToString("g")</p>
+                        <p><strong>Status:</strong> @(Model.IsCancelled ? "Cancelled" : Model.TripStatus)</p>
+                    </div>
+                </div>
+                <div class="d-flex gap-3 mt-4">
+                    <a href="@Url.Action("ViewBookings", "User")" class="btn btn-outline-secondary btn-lg custom-btn">Back</a>
+                    @if (!Model.IsCancelled && !Model.IsExpired)
+                    {
+                       
+                        <form asp-action="CancelBooking" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-danger btn-lg custom-btn">Cancel Booking</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 300px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .text-primary {
+            color: #007bff !important;
+            font-weight: bold;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+            font-weight: bold;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+            font-weight: bold !important;
+        }
+
+        .btn-lg, .btn-sm {
+            font-weight: bold;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .display-4 {
+            font-weight: 700 !important;
+        }
+
+        .alert {
+            font-weight: 500;
+        }
+
+        p strong {
+            font-weight: 600;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.custom-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.style.opacity = '0.8';
+                    setTimeout(() => btn.style.opacity = '1', 200);
+                });
+            });
+        });
+    </script>
+}

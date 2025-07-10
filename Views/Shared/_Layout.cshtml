@@ -1,0 +1,290 @@
+﻿@using TrainBookingAppMVC.DTOs.ResponseModel
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Train Booking</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/TrainBookingAppMVC.styles.css" asp-append-version="true" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    @RenderSection("Styles", required: false)
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --text-dark: #333;
+            --text-light: #666;
+            --bg-light: #f8f9fa;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--text-light)) !important;
+            box-shadow: var(--shadow);
+            padding: 1rem 0;
+            border: none;
+        }
+
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white !important;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .navbar-brand:hover {
+                color: var(--accent-color) !important;
+                transform: scale(1.05);
+                transition: all 0.3s ease;
+            }
+
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 0 0.2rem;
+        }
+
+            .navbar-nav .nav-link:hover {
+                color: white !important;
+                background: rgba(255, 255, 255, 0.1);
+                transform: translateY(-2px);
+            }
+
+            .navbar-nav .nav-link.active {
+                background: rgba(255, 255, 255, 0.2);
+                color: white !important;
+            }
+
+        .btn-outline-light {
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            margin: 0 0.3rem;
+        }
+
+            .btn-outline-light:hover {
+                background: white;
+                color: var(--primary-color);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+            }
+
+        .btn-light {
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            margin: 0 0.3rem;
+        }
+
+            .btn-light:hover {
+                background: var(--primary-color);
+                color: white;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+            }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            padding: 0.7rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+            .dropdown-item:hover {
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                color: white;
+            }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, var(--text-dark), #555);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+            .footer a {
+                color: var(--accent-color);
+                text-decoration: none;
+            }
+
+                .footer a:hover {
+                    color: white;
+                    text-decoration: underline;
+                }
+
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-train"></i>
+                    TrainBooking
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon" style="color: white;"><i class="fas fa-bars"></i></span>
+                </button>
+
+                <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home"></i> Home
+                            </a>
+                        </li>
+                       
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="About">
+                                <i class="fas fa-info-circle"></i> About
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Contact">
+                                <i class="fas fa-phone"></i> Contact
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center">
+                        @if (ViewBag.IsAuthenticated == true)
+                        {
+                            <div class="user-info">
+                                <div class="dropdown">
+                                    <a class="dropdown-toggle d-flex align-items-center text-decoration-none"
+                                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <div class="user-avatar">
+                                            @(ViewBag.FullName?.ToString()?.Substring(0, 1).ToUpper() ?? "U")
+                                        </div>
+                                        <span class="ms-2">@ViewBag.FullName</span>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        @if (ViewBag.IsAdmin == true)
+                                        {
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Index">
+                                                    <i class="fas fa-cogs"></i> Admin Panel
+                                                </a>
+                                            </li>
+                                        }
+                                        @if (ViewBag.IsRegular == true)
+                                        {
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" asp-area="" asp-controller="User" asp-action="Index">
+                                                    <i class="fas fa-cogs"></i> User Panel
+                                                </a>
+                                            </li>
+                                        }
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" asp-area="" asp-controller="Auth" asp-action="Logout">
+                                                <i class="fas fa-sign-out-alt"></i> Logout
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="btn btn-outline-light" asp-area="" asp-controller="Auth" asp-action="Login">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                            <a class="btn btn-light" asp-area="" asp-controller="Auth" asp-action="Register">
+                                <i class="fas fa-user-plus"></i> Register
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    @if (ViewData["Title"] != "Login" && ViewData["Title"] != "Register" && ViewData["Title"] != "Users" && ViewData["Title"] != "Create Train" && ViewData["Title"] != "User Bookings"
+        && ViewData["Title"] != "Create Trip" && ViewData["Title"] != "Edit Train" && ViewData["Title"] != "Edit Trip" && ViewData["Title"] != "Trip Details" && ViewData["Title"] != "Train Details"
+        && ViewData["Title"] != "Initialize Sample Trains" && ViewData["Title"] != "Access Denied" && ViewData["Title"] != "Book Trip"  && ViewData["Title"] != "All Trains"
+        && ViewData["Title"] != "My Bookings" && ViewData["Title"] != "Update Booking" && ViewData["Title"] != "Booking Details" && ViewData["Title"] != "Contact Us" && ViewData["Title"] != "About Us" && ViewData["Title"] != "View All Trips")
+    {
+    <footer class="footer text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>&copy; 2025 - TrainBooking - Your Journey Begins Here</p>
+                </div>
+                <div class="col-md-6">
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a> |
+                    <a asp-area="" asp-controller="Home" asp-action="Contact">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

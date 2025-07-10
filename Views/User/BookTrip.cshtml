@@ -1,0 +1,151 @@
+﻿@using TrainBookingAppMVC.DTOs.RequestModel
+@using TrainBookingAppMVC.DTOs.ResponseModel
+@model CreateBookingRequestModel
+
+@{
+    ViewData["Title"] = "Book Trip";
+    var trip = ViewBag.Trip as TripDto;
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+}
+
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">Book Trip: @trip.TrainName</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-lg border-0 large-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Booking Details</h3>
+                <div class="mb-4">
+                    <p><strong>Train:</strong> @trip.TrainName (@trip.TrainNumber)</p>
+                    <p><strong>Route:</strong> @trip.Source to @trip.Destination</p>
+                    <p><strong>Departure:</strong> @TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("g")</p>
+                </div>
+                <form asp-action="BookTrip" method="post">
+                    <input type="hidden" asp-for="TripId" />
+                    <input type="hidden" asp-for="UserId" />
+                    <div class="mb-3">
+                        <label asp-for="TicketClass" class="form-label fw-bold">Ticket Class</label>
+                        <select asp-for="TicketClass" class="form-select">
+                            @foreach (var pricing in trip.Pricings)
+                            {
+                                <option value="@pricing.TicketClass">@pricing.TicketClass (₦@pricing.Price per seat, @pricing.AvailableSeats available)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="TicketClass" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="NumberOfSeats" class="form-label fw-bold">Number of Seats</label>
+                        <input asp-for="NumberOfSeats" class="form-control" type="number" min="1" />
+                        <span asp-validation-for="NumberOfSeats" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="PaymentAmount" class="form-label fw-bold">Payment Amount (₦)</label>
+                        <input asp-for="PaymentAmount" class="form-control" type="number" step="0.01" min="0" />
+                        <span asp-validation-for="PaymentAmount" class="text-danger"></span>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary btn-lg custom-btn">Confirm Booking</button>
+                        <a href="@Url.Action("ViewTrips", "User", new { id = trip.TrainId })" class="btn btn-outline-secondary btn-lg custom-btn">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 300px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .text-primary {
+            color: #007bff !important;
+            font-weight: bold;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+            font-weight: bold;
+        }
+
+        .form-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .form-control, .form-select {
+            font-size: 1rem;
+            padding: 0.75rem;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+            font-weight: bold !important;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+        }
+
+        .display-4 {
+            font-weight: 700 !important;
+        }
+
+        .alert {
+            font-weight: 500;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.11/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.custom-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.style.opacity = '0.8';
+                    setTimeout(() => btn.style.opacity = '1', 200);
+                });
+            });
+        });
+    </script>
+}

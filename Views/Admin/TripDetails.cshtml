@@ -1,0 +1,116 @@
+﻿@model TrainBookingAppMVC.DTOs.ResponseModel.TripDto
+@using System.Linq
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Trip Details";
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+    var nairaCulture = new CultureInfo("ha-NG");
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4 text-primary fw-bold">Trip Details</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model != null)
+    {
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h3 class="card-title text-secondary mb-4">Trip: @Model.Source to @Model.Destination</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Train:</strong> @Model.TrainName (@Model.TrainNumber)</p>
+                        <p><strong>Source:</strong> @Model.Source</p>
+                        <p><strong>Destination:</strong> @Model.Destination</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Departure Time (WAT):</strong> @TimeZoneInfo.ConvertTimeFromUtc(Model.DepartureTime, timeZone).ToString("g")</p>
+                        <p><strong>Status:</strong> @(Model.IsExpired ? "Expired" : "Active")</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h4 class="text-secondary mb-3">Pricing Details</h4>
+                @if (Model.Pricings.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ticket Class</th>
+                                    <th>Price</th>
+                                    <th>Total Seats</th>
+                                    <th>Available Seats</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var pricing in Model.Pricings)
+                                {
+                                    <tr>
+                                        <td>@pricing.TicketClass</td>
+                                        <td>@pricing.Price.ToString("C", nairaCulture)</td>
+                                        <td>@pricing.TotalSeats</td>
+                                        <td>@pricing.AvailableSeats</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No pricing details available.</p>
+                }
+                <div class="mt-4">
+                    <a href="@Url.Action("EditTrip", new { id = Model.Id })" class="btn btn-primary custom-btn me-2">Edit Trip</a>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary custom-btn">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="text-danger">Trip not found.</p>
+        <a href="@Url.Action("Index")" class="btn btn-secondary custom-btn">Back to Dashboard</a>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+        .custom-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .card {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .table-dark {
+            background-color: #343a40;
+        }
+        .text-primary {
+            color: #007bff !important;
+        }
+        .text-secondary {
+            color: #6c757d !important;
+        }
+    </style>
+}

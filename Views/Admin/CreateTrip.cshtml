@@ -1,0 +1,207 @@
+﻿@model TrainBookingAppMVC.DTOs.RequestModel.CreateTripDto
+@using TrainBookingAppMVC.Models.Enum
+
+@{
+    ViewData["Title"] = "Create Trip";
+    var trains = ViewBag.Trains as List<TrainBookingAppMVC.DTOs.ResponseModel.TrainResponseModel> ?? new List<TrainBookingAppMVC.DTOs.ResponseModel.TrainResponseModel>();
+    var ticketClasses = Enum.GetValues(typeof(TicketClass)).Cast<TicketClass>().Select(v => v.ToString()).ToArray();
+}
+
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">Create New Trip</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-lg border-0 large-card">
+        <div class="card-body p-4">
+            <form asp-action="CreateTrip" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger fs-5"></div>
+
+                <div class="mb-3">
+                    <label asp-for="TrainId" class="form-label fs-5">Train</label>
+                    <select asp-for="TrainId" class="form-control">
+                        <option value="">Select a train</option>
+                        @foreach (var train in trains)
+                        {
+                            <option value="@train.Id">@train.Name (@train.TrainNumber)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="TrainId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Source" class="form-label fs-5">Source</label>
+                    <input asp-for="Source" class="form-control" />
+                    <span asp-validation-for="Source" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Destination" class="form-label fs-5">Destination</label>
+                    <input asp-for="Destination" class="form-control" />
+                    <span asp-validation-for="Destination" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="DepartureTime" class="form-label fs-5">Departure Time (WAT)</label>
+                    <input asp-for="DepartureTime" class="form-control" type="datetime-local" id="departureTime" />
+                    <small class="form-text text-muted">Enter time in West Africa Time (WAT, UTC+1).</small>
+                    <span asp-validation-for="DepartureTime" class="text-danger"></span>
+                </div>
+
+                <h3 class="text-secondary mb-3 fs-2">Pricing</h3>
+                <div id="pricing-section">
+                    @for (int i = 0; i < Model.Pricings.Count; i++)
+                    {
+                        <div class="pricing-entry mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label asp-for="Pricings[i].TicketClass" class="form-label fs-5">Ticket Class</label>
+                                    <select asp-for="Pricings[i].TicketClass" class="form-control ticket-class-select" asp-items="@Html.GetEnumSelectList<TicketClass>()"></select>
+                                    <span asp-validation-for="Pricings[i].TicketClass" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="Pricings[i].Price" class="form-label fs-5">Price (₦)</label>
+                                    <input asp-for="Pricings[i].Price" class="form-control" type="number" step="0.01" min="0" />
+                                    <span asp-validation-for="Pricings[i].Price" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    <button type="button" class="btn btn-secondary mb-3 custom-btn" onclick="addPricingField()">Add Pricing</button>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg custom-btn">Create Trip</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg custom-btn">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 400px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .text-primary {
+            color: #007bff !important;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const ticketClasses = @Html.Raw(Json.Serialize(ticketClasses));
+
+        function addPricingField() {
+            var index = document.querySelectorAll('.pricing-entry').length;
+            var pricingSection = document.getElementById('pricing-section');
+
+            var selectedClasses = Array.from(document.querySelectorAll('.ticket-class-select'))
+                .map(select => select.value)
+                .filter(value => value !== '');
+
+            var options = '<option value="">Select a ticket class</option>';
+            ticketClasses.forEach(value => {
+                if (!selectedClasses.includes(value)) {
+                    options += `<option value="${value}">${value}</option>`;
+                }
+            });
+
+            var newField = `
+                <div class="pricing-entry mb-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label fs-5">Ticket Class</label>
+                            <select name="Pricings[${index}].TicketClass" class="form-control ticket-class-select">
+                                ${options}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-5">Price (₦)</label>
+                            <input name="Pricings[${index}].Price" class="form-control" type="number" step="0.01" min="0" />
+                        </div>
+                    </div>
+                </div>`;
+            pricingSection.insertAdjacentHTML('beforeend', newField);
+
+            updateTicketClassOptions();
+        }
+
+        function updateTicketClassOptions() {
+            var selects = document.querySelectorAll('.ticket-class-select');
+            var selectedClasses = Array.from(selects)
+                .map(select => select.value)
+                .filter(value => value !== '');
+
+            selects.forEach((select, index) => {
+                var currentValue = select.value;
+                var options = '<option value="">Select a ticket class</option>';
+                ticketClasses.forEach(value => {
+                    if (!selectedClasses.includes(value) || value === currentValue) {
+                        options += `<option value="${value}" ${value === currentValue ? 'selected' : ''}>${value}</option>`;
+                    }
+                });
+                select.innerHTML = options;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', updateTicketClassOptions);
+
+        document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('ticket-class-select')) {
+                updateTicketClassOptions();
+            }
+        });
+    </script>
+}

@@ -1,0 +1,79 @@
+﻿@model dynamic
+
+@{
+    ViewData["Title"] = "Initialize Sample Trains";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4 text-primary fw-bold">Initialize Sample Trains</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h3 class="card-title text-secondary mb-4">Confirm Initialization</h3>
+            <p class="mb-4">This action will create sample trains in the system if none exist. The following trains will be added:</p>
+            <ul class="list-group list-group-flush mb-4">
+                <li class="list-group-item">TR101: Express Voyager (120 Economy, 30 Business, 20 First Class)</li>
+                <li class="list-group-item">TR102: Metro Cruiser (150 Economy, 40 Business, 25 First Class)</li>
+                <li class="list-group-item">TR103: Royal Transit (100 Economy, 50 Business, 30 First Class)</li>
+            </ul>
+            <form asp-action="InitializeSampleTrainsPost" method="post">
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary custom-btn me-2">Initialize Sample Trains</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary custom-btn">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .card {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            }
+
+        .text-primary {
+            color: #007bff !important;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+        }
+
+        .list-group-item {
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+}

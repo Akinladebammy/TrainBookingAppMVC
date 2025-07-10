@@ -1,0 +1,203 @@
+﻿@{
+    ViewData["Title"] = "About Us";
+}
+
+<div class="container mt-5">
+    <section class="about-section">
+        <h1 class="section-title mb-5 text-primary fw-bold display-4">About TrainBooking</h1>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card shadow-lg border-0 large-card mb-5">
+            <div class="card-body p-4">
+                <h2 class="card-title text-secondary mb-4 fw-bold fs-2">Our Mission</h2>
+                <p class="fs-5 text-muted">
+                    TrainBooking is dedicated to making train travel seamless and enjoyable. Our platform connects you to a wide range of routes across the country, offering a fast, secure, and user-friendly booking experience.
+                </p>
+                <p class="fs-5 text-muted">
+                    Founded in 2023, we aim to revolutionize train travel by providing reliable schedules, competitive pricing, and exceptional customer support. Whether you're a daily commuter or a long-distance traveler, TrainBooking is your trusted partner for every journey.
+                </p>
+                <div class="d-flex gap-3 mt-4">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary btn-lg custom-btn">Back to Home</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-section">
+            <h2 class="section-title mb-4">Why Choose Us?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="feature-title">Fast Booking</h3>
+                    <p class="feature-description">Book your tickets in just a few clicks with our streamlined process.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Secure Payment</h3>
+                    <p class="feature-description">Your payment information is protected with bank-level security.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3 class="feature-title">24/7 Support</h3>
+                    <p class="feature-description">Our customer support team is always ready to help you.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 200px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #343a40;
+            position: relative;
+        }
+
+            .section-title::after {
+                content: '';
+                position: absolute;
+                bottom: -10px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 80px;
+                height: 4px;
+                background: linear-gradient(135deg, #007bff, #28a745);
+                border-radius: 2px;
+            }
+
+        .text-primary {
+            color: #007bff !important;
+            font-weight: bold;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+            font-weight: bold;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+            font-weight: bold !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+            font-weight: 500;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+        }
+
+        .display-4 {
+            font-weight: 700 !important;
+        }
+
+        .alert {
+            font-weight: 500;
+        }
+
+        .features-section {
+            background: white;
+            padding: 2rem 0;
+            border-radius: 12px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+            .feature-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #007bff;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-description {
+            color: #6c757d;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.custom-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.style.opacity = '0.8';
+                    setTimeout(() => btn.style.opacity = '1', 200);
+                });
+            });
+        });
+    </script>
+}

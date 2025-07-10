@@ -1,0 +1,159 @@
+﻿@using System.Linq
+@model TrainBookingAppMVC.DTOs.Wrapper.ResponseWrapper<IEnumerable<TrainBookingAppMVC.DTOs.ResponseModel.TripDto>>
+
+@{
+    ViewData["Title"] = "View All Trips";
+    var trips = Model?.Data?.ToList() ?? new List<TrainBookingAppMVC.DTOs.ResponseModel.TripDto>();
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+}
+
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">All Available Trips</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-lg border-0 large-card">
+        <div class="card-body p-4">
+            <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Available Trips</h3>
+            <div class="d-flex gap-3 mb-4">
+                <a href="@Url.Action("Index", "User")" class="btn btn-secondary btn-lg custom-btn">Back to Dashboard</a>
+            </div>
+            @if (trips.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle table-lg" id="tripsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Train</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Departure (WAT)</th>
+                                <th>Ticket Classes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var trip in trips)
+                            {
+                                <tr>
+                                    <td>@trip.TrainName (@trip.TrainNumber)</td>
+                                    <td>@trip.Source</td>
+                                    <td>@trip.Destination</td>
+                                    <td>@TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("g")</td>
+                                    <td>@(trip.Pricings.Any() ? string.Join(", ", trip.Pricings.Select(p => p.TicketClass)) : "N/A")</td>
+                                    <td>
+                                        <a href="@Url.Action("BookTrip", "User", new { tripId = trip.Id })" class="btn btn-primary btn-sm custom-btn">Book Now</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted mt-3 fs-5">Total Available Trips: @trips.Count</p>
+            }
+            else
+            {
+                <p class="text-muted fs-5">No trips available.</p>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 300px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .table-dark {
+            background-color: #343a40;
+            color: white;
+        }
+
+        .text-primary {
+            color: #007bff !important;
+            font-weight: bold;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+            font-weight: bold;
+        }
+
+        .table-lg th, .table-lg td {
+            font-size: 1.1rem;
+            padding: 1rem;
+            font-weight: 500;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+            font-weight: bold !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+            font-weight: 500;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+        }
+
+        .display-4 {
+            font-weight: 700 !important;
+        }
+
+        .alert {
+            font-weight: 500;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ensure buttons have consistent styling
+            const buttons = document.querySelectorAll('.custom-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.style.opacity = '0.8';
+                    setTimeout(() => btn.style.opacity = '1', 200);
+                });
+            });
+        });
+    </script>
+}

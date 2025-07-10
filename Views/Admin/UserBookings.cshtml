@@ -1,0 +1,140 @@
+﻿@using System.Linq
+@model dynamic
+@{
+    ViewData["Title"] = "User Bookings";
+    var user = Model?.User as TrainBookingAppMVC.DTOs.ResponseModel.UserResponseModel;
+    var bookings = Model?.Bookings as List<TrainBookingAppMVC.DTOs.ResponseModel.BookingResponseModel> ?? new List<TrainBookingAppMVC.DTOs.ResponseModel.BookingResponseModel>();
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+}
+
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">Bookings for @user.FullName</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Bookings Section -->
+    <div class="col-md-12 mb-5">
+        <div class="card shadow-lg border-0 large-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">User Bookings</h3>
+                <div class="d-flex gap-3 mb-4">
+                    <a href="@Url.Action("Users")" class="btn btn-outline-secondary btn-lg custom-btn">Back to Users</a>
+                </div>
+                @if (bookings.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle table-lg" id="bookingsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Train</th>
+                                    <th>Source</th>
+                                    <th>Destination</th>
+                                    <th>Departure (WAT)</th>
+                                    <th>Ticket Class</th>
+                                    <th>Seats</th>
+                                    <th>Total Price</th>
+                                    <th>Booking Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var booking in bookings)
+                                {
+                                    <tr class="@(booking.IsCancelled || booking.IsExpired ? "expired-trip text-muted" : "")">
+                                        <td>@booking.TrainName (@booking.TrainNumber)</td>
+                                        <td>@booking.Source</td>
+                                        <td>@booking.Destination</td>
+                                        <td>@TimeZoneInfo.ConvertTimeFromUtc(booking.DepartureTime, timeZone).ToString("g")</td>
+                                        <td>@booking.TicketClass</td>
+                                        <td>@booking.NumberOfSeats</td>
+                                        <td>₦@booking.TotalPrice</td>
+                                        <td>@TimeZoneInfo.ConvertTimeFromUtc(booking.BookingDate, timeZone).ToString("g")</td>
+                                        <td>@(booking.IsCancelled ? "Cancelled" : booking.TripStatus)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted mt-3 fs-5">Total Bookings: @bookings.Count, Cancelled: @bookings.Count(b => b.IsCancelled), Completed: @bookings.Count(b => b.IsExpired)</p>
+                }
+                else
+                {
+                    <p class="text-muted fs-5">No bookings available for this user.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 400px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .table-dark {
+            background-color: #343a40;
+        }
+
+        .expired-trip {
+            background-color: #f8f9fa;
+            opacity: 0.7;
+        }
+
+        .text-primary {
+            color: #007bff !important;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+        }
+
+        .table-lg th, .table-lg td {
+            font-size: 1.1rem;
+            padding: 1rem;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+        }
+    </style>
+}

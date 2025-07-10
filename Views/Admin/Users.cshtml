@@ -1,0 +1,127 @@
+﻿@using System.Linq
+@model TrainBookingAppMVC.DTOs.ResponseModel.UserListResponseModel
+@{
+    ViewData["Title"] = "Users";
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+}
+
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">Users</h1>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Users Section -->
+    <div class="col-md-12 mb-5">
+        <div class="card shadow-lg border-0 large-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">All Users</h3>
+                <div class="d-flex gap-3 mb-4">
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-lg custom-btn">Back to Dashboard</a>
+                </div>
+                @if (Model.Users.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle table-lg">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td>@user.FullName</td>
+                                        <td>@user.Username</td>
+                                        <td>@user.Email</td>
+                                        <td>@user.Role</td>
+                                        <td>
+                                            <a href="@Url.Action("UserBookings", new { id = user.Id })" class="btn btn-info btn-sm custom-btn me-2">View Bookings</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted mt-3 fs-5">Total Users: @Model.TotalCount</p>
+                }
+                else
+                {
+                    <p class="text-muted fs-5">No users available.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 400px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .table-dark {
+            background-color: #343a40;
+        }
+
+        .text-primary {
+            color: #007bff !important;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+        }
+
+        .table-lg th, .table-lg td {
+            font-size: 1.1rem;
+            padding: 1rem;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+        }
+    </style>
+}

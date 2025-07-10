@@ -1,0 +1,524 @@
+﻿@using System.Linq
+@using TrainBookingAppMVC.DTOs.ResponseModel
+@model List<TripDto>
+
+@{
+    ViewData["Title"] = "Home Page";
+    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+}
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #007bff, #6c757d);
+        color: white;
+        padding: 4rem 0;
+        margin: -2rem -1rem 3rem -1rem;
+        border-radius: 0 0 20px 20px;
+        text-align: center;
+    }
+
+    .hero-content h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .hero-content p {
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+    }
+
+    .hero-stats {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        margin-top: 2rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        display: block;
+        color: #28a745;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #343a40;
+        margin-bottom: 3rem;
+        text-align: center;
+        position: relative;
+    }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(135deg, #007bff, #28a745);
+            border-radius: 2px;
+        }
+
+    .trip-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+        .trip-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+    .trip-header {
+        background: linear-gradient(135deg, #007bff, #6c757d);
+        color: white;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .trip-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(30px, -30px);
+        }
+
+    .trip-route {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .route-point {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .route-arrow {
+        font-size: 1.2rem;
+        opacity: 0.8;
+    }
+
+    .trip-time {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .trip-body {
+        padding: 2rem;
+    }
+
+    .trip-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-item {
+        text-align: center;
+    }
+
+    .detail-icon {
+        font-size: 2rem;
+        color: #007bff;
+        margin-bottom: 0.5rem;
+    }
+
+    .detail-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.3rem;
+    }
+
+    .detail-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #343a40;
+    }
+
+    .trip-price {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #007bff;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .trip-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .btn-book {
+        background: linear-gradient(135deg, #007bff, #6c757d);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .btn-book:hover {
+            background: linear-gradient(135deg, #6c757d, #007bff);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+
+        .btn-book:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+    .btn-details {
+        background: transparent;
+        color: #007bff;
+        border: 2px solid #007bff;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .btn-details:hover {
+            background: #007bff;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+    .login-prompt {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 1px solid #f6c23e;
+        color: #856404;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+        .login-prompt a {
+            color: #856404;
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+            .login-prompt a:hover {
+                border-bottom-color: #856404;
+            }
+
+    .no-trips {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+        .no-trips i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #007bff;
+        }
+
+    .features-section {
+        background: white;
+        padding: 4rem 0;
+        margin: 4rem -1rem 3rem -1rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2rem;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+    .feature-icon {
+        font-size: 3rem;
+        color: #007bff;
+        margin-bottom: 1rem;
+    }
+
+    .feature-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 1rem;
+    }
+
+    .feature-description {
+        color: #6c757d;
+        line-height: 1.6;
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <h1><i class="fas fa-train"></i> Your Journey Begins Here</h1>
+        <p>Explore available trips and book your train tickets with ease</p>
+
+        <div class="hero-stats">
+            <div class="stat-item">
+                <span class="stat-number">50+</span>
+                <span class="stat-label">Routes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">10K+</span>
+                <span class="stat-label">Happy Customers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">Support</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Available Trips Section -->
+<section class="trips-section">
+    <h2 class="section-title">Available Trips</h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (ViewBag.IsAuthenticated != true)
+    {
+        <div class="login-prompt">
+            <i class="fas fa-info-circle"></i>
+            <strong>Want to book a trip?</strong>
+            <a asp-controller="Auth" asp-action="Login">Login</a> or
+            <a asp-controller="Auth" asp-action="Register">Register</a> to start booking your tickets!
+        </div>
+    }
+
+    <div class="trips-container">
+        @if (Model.Any())
+        {
+            @foreach (var trip in Model.Where(t => !t.IsExpired))
+            {
+                <div class="trip-card">
+                    <div class="trip-header">
+                        <div class="trip-route">
+                            <span class="route-point">@trip.Source</span>
+                            <span class="route-arrow">
+                                <i class="fas fa-long-arrow-alt-right"></i>
+                            </span>
+                            <span class="route-point">@trip.Destination</span>
+                        </div>
+                        <div class="trip-time">
+                            <i class="fas fa-clock"></i>
+                            Departure: @TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("MMM dd, yyyy - HH:mm")
+                        </div>
+                    </div>
+
+                    <div class="trip-body">
+                        <div class="trip-details">
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-chair"></i>
+                                </div>
+                                <div class="detail-label">Available Seats</div>
+                                <div class="detail-value">
+                                    @(trip.Pricings.Sum(p => p.AvailableSeats))
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-ticket-alt"></i>
+                                </div>
+                                <div class="detail-label">Ticket Classes</div>
+                                <div class="detail-value">
+                                    @(trip.Pricings.Any() ? string.Join(", ", trip.Pricings.Select(p => p.TicketClass)) : "N/A")
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="detail-label">Status</div>
+                                <div class="detail-value">
+                                    @(trip.Pricings.Any(p => p.AvailableSeats > 0) && !trip.IsExpired ? "Available" : "Sold Out")
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trip-price">
+                            ₦@(trip.Pricings.Any() ? trip.Pricings.Min(p => p.Price).ToString("N0") : "N/A")
+                        </div>
+
+                        <div class="trip-actions">
+                            @if (ViewBag.IsRegular == true)
+                            {
+                                @if (trip.Pricings.Any(p => p.AvailableSeats > 0) && !trip.IsExpired)
+                                {
+                                    <a href="@Url.Action("BookTrip", "User", new { tripId = trip.Id })" class="btn-book">
+                                        <i class="fas fa-ticket-alt"></i> Book Now
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button class="btn-book" disabled>
+                                        <i class="fas fa-times"></i> Sold Out
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("Login", "Auth")" class="btn-book">
+                                    <i class="fas fa-sign-in-alt"></i> Login to Book
+                                </a>
+                            }
+
+                            @if (ViewBag.IsAdmin == true)
+                            {
+                                <a href="@Url.Action("TrainDetails", "Admin", new { id = trip.TrainId })" class="btn-details">
+                                    <i class="fas fa-info"></i> View Train Details
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="@Url.Action("TrainDetails", "User", new { id = trip.TrainId })" class="btn-details">
+                                    <i class="fas fa-info"></i> View Train Details
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="no-trips">
+                <i class="fas fa-train"></i>
+                <h3>No trips available at the moment</h3>
+                <p>Please check back later for available trips</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="container">
+        <h2 class="section-title">Why Choose TrainBooking?</h2>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h3 class="feature-title">Fast Booking</h3>
+                <p class="feature-description">Book your tickets in just a few clicks with our streamlined booking process.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="feature-title">Secure Payment</h3>
+                <p class="feature-description">Your payment information is protected with bank-level security.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h3 class="feature-title">24/7 Support</h3>
+                <p class="feature-description">Our customer support team is always ready to help you.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3 class="feature-title">Mobile Friendly</h3>
+                <p class="feature-description">Access your tickets and manage bookings on any device.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add smooth scrolling for better UX
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // Add button click animation
+            const buttons = document.querySelectorAll('.btn-book, .btn-details');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.style.opacity = '0.8';
+                    setTimeout(() => btn.style.opacity = '1', 200);
+                });
+            });
+        });
+    </script>
+}

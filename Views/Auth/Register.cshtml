@@ -1,0 +1,351 @@
+﻿@model TrainBookingAppMVC.DTOs.RequestModel.RegisterRequestModel
+
+@{
+    ViewData["Title"] = "Register";
+    Layout = "_Layout";
+}
+
+<style>
+    .register-page-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh !important;
+        padding: 2rem 1rem !important;
+        max-width: none !important;
+    }
+
+    .register-container {
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px !important;
+        width: 100% !important;
+        max-width: 400px !important;
+        position: relative;
+        overflow: hidden;
+        box-sizing: border-box !important;
+        margin: 0 auto !important;
+    }
+
+        .register-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .register-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+        .register-header h1 {
+            color: #333;
+            font-size: 2.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .register-header p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+    .success-message {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: 500;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+    .form-control {
+        width: 100% !important;
+        padding: 15px 50px 15px 20px;
+        border: 2px solid #e1e5e9;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+        box-sizing: border-box;
+    }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+    .btn-primary {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+    .validation-summary-errors {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        animation: shake 0.5s ease-in-out;
+    }
+
+        .validation-summary-errors ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .validation-summary-errors li {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+    .login-link {
+        text-align: center;
+        margin-top: 25px;
+        padding-top: 25px;
+        border-top: 1px solid #e1e5e9;
+    }
+
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+            .login-link a:hover {
+                color: #764ba2;
+                text-decoration: underline;
+            }
+
+    .show-password-btn {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #666;
+        font-size: 14px;
+        padding: 5px;
+        transition: color 0.3s ease;
+    }
+
+        .show-password-btn:hover {
+            color: #667eea;
+        }
+
+    /* Override the layout background for this page */
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+</style>
+
+<div class="register-page-container">
+    <div class="register-container">
+        <div class="register-header">
+            <h1>Create Account</h1>
+            <p>Sign up to start your journey</p>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="success-message">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="validation-summary-errors">
+                <ul>
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post" asp-action="Register" asp-controller="Auth" id="registerForm">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label for="FullName">Full Name</label>
+                <input type="text"
+                       class="form-control"
+                       id="FullName"
+                       name="FullName"
+                       placeholder="Enter your full name"
+                       value="@Model?.FullName"
+                       required />
+                <div class="validation-feedback" id="fullNameFeedback"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="Username">Username</label>
+                <input type="text"
+                       class="form-control"
+                       id="Username"
+                       name="Username"
+                       placeholder="Choose a username"
+                       value="@Model?.Username"
+                       required />
+                <div class="validation-feedback" id="usernameFeedback"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="Email">Email Address</label>
+                <input type="email"
+                       class="form-control"
+                       id="Email"
+                       name="Email"
+                       placeholder="Enter your email address"
+                       value="@Model?.Email"
+                       required />
+                <div class="validation-feedback" id="emailFeedback"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="Password">Password</label>
+                <div style="position: relative;">
+                    <input type="password"
+                           class="form-control"
+                           id="Password"
+                           name="Password"
+                           placeholder="Create a secure password"
+                           required />
+                    <button type="button" class="show-password-btn" onclick="togglePassword('Password')">Show</button>
+                </div>
+                <div class="validation-feedback" id="passwordFeedback"></div>
+                <div class="password-requirements" id="passwordRequirements" style="display: none;">
+                    <h4>Password Requirements:</h4>
+                    <div class="requirement" id="lengthReq">
+                        <div class="requirement-icon">?</div>
+                        At least 8 characters
+                    </div>
+                    <div class="requirement" id="numberReq">
+                        <div class="requirement-icon">?</div>
+                        At least one number
+                    </div>
+                    <div class="requirement" id="symbolReq">
+                        <div class="requirement-icon">?</div>
+                        At least one symbol
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="ConfirmPassword">Confirm Password</label>
+                <div style="position: relative;">
+                    <input type="password"
+                           class="form-control"
+                           id="ConfirmPassword"
+                           name="ConfirmPassword"
+                           placeholder="Confirm your password"
+                           required />
+                    <button type="button" class="show-password-btn" onclick="togglePassword('ConfirmPassword')">Show</button>
+                </div>
+                <div class="validation-feedback" id="confirmPasswordFeedback"></div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="submitBtn">
+                Create Account
+            </button>
+        </form>
+
+        <div class="login-link">
+            <p>Already have an account? <a href="@Url.Action("Login", "Auth")">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Add some interactive feedback
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.form-control');
+
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'scale(1.02)';
+                });
+
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'scale(1)';
+                });
+            });
+
+            // Form submission animation
+            const form = document.querySelector('form');
+            const submitBtn = document.querySelector('.btn-primary');
+
+            form.addEventListener('submit', function() {
+                submitBtn.innerHTML = 'Registering...';
+                submitBtn.style.background = 'linear-gradient(135deg, #555, #777)';
+            });
+
+            // Show/Hide password functionality
+            function togglePassword(id) {
+                const passwordInput = document.getElementById(id);
+                const button = passwordInput.nextElementSibling;
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    button.textContent = 'Hide';
+                } else {
+                    passwordInput.type = 'password';
+                    button.textContent = 'Show';
+                }
+            }
+            window.togglePassword = togglePassword; // Expose to global scope
+        });
+    </script>
+}
