@@ -1,4 +1,6 @@
 ﻿using TrainBookinAppMVC.Models;
+using TrainBookingAppMVC.Models;
+using TrainBookingAppMVC.Models.Enum;
 
 namespace TrainBookingAppMVC.Repository.Interfaces
 {
@@ -12,8 +14,8 @@ namespace TrainBookingAppMVC.Repository.Interfaces
         Task<bool> DeleteBookingAsync(Guid id);
         Task<bool> HasActiveBookingForTripAsync(Guid tripId, Guid userId);
         Task<int> GetTotalBookedSeatsForTripAsync(Guid tripId);
-        Task<bool> UpdateTripAvailableSeatsAsync(Guid tripId, int seatChange);
-        Task<(bool success, string message)> ProcessBookingTransactionAsync(Guid tripId, Guid userId, int numberOfSeats, decimal totalPrice, string ticketClass);
+        Task<bool> UpdateTripAvailableSeatsAsync(Guid tripId, int seatChange, string ticketClass = null);
+        Task<(bool success, string message, Guid bookingId)> ProcessBookingTransactionAsync(Guid tripId, Guid userId, int numberOfSeats, decimal totalPrice, string ticketClass, List<string> seatNumbers, string transactionReference = null);
+        Task<List<string>> GetAvailableSeatsAsync(Guid tripId, TicketClass ticketClass);
     }
 }
-

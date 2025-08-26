@@ -5,7 +5,7 @@
 }
 
 <div class="container mt-5">
-    <h2 class="mb-4 text-primary fw-bold">Initialize Sample Trains</h2>
+    <h1 class="mb-5 text-primary fw-bold display-4">Initialize Sample Trains</h1>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -22,19 +22,19 @@
         </div>
     }
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <h3 class="card-title text-secondary mb-4">Confirm Initialization</h3>
-            <p class="mb-4">This action will create sample trains in the system if none exist. The following trains will be added:</p>
+    <div class="card shadow-lg border-0 large-card">
+        <div class="card-body p-4">
+            <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Confirm Initialization</h3>
+            <p class="mb-4 fs-5">This action will create sample trains with their images in the system if none exist. The following trains will be added:</p>
             <ul class="list-group list-group-flush mb-4">
-                <li class="list-group-item">TR101: Express Voyager (120 Economy, 30 Business, 20 First Class)</li>
-                <li class="list-group-item">TR102: Metro Cruiser (150 Economy, 40 Business, 25 First Class)</li>
-                <li class="list-group-item">TR103: Royal Transit (100 Economy, 50 Business, 30 First Class)</li>
+                <li class="list-group-item">TR101: Express Voyager (45 Economy, 30 Business, 20 First Class, Image: express-voyager.png)</li>
+                <li class="list-group-item">TR102: Metro Cruiser (50 Economy, 40 Business, 25 First Class, Image: metro-cruiser.png)</li>
+                <li class="list-group-item">TR103: Royal Transit (50 Economy, 30 Business, 20 First Class, Image: royal-transit.png)</li>
             </ul>
             <form asp-action="InitializeSampleTrainsPost" method="post">
                 <div class="mb-3">
-                    <button type="submit" class="btn btn-primary custom-btn me-2">Initialize Sample Trains</button>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary custom-btn">Cancel</a>
+                    <button type="submit" class="btn btn-primary btn-lg custom-btn me-2">Initialize Sample Trains</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg custom-btn">Cancel</a>
                 </div>
             </form>
         </div>
@@ -53,14 +53,15 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             }
 
-        .card {
-            border-radius: 10px;
+        .large-card {
+            border-radius: 12px;
             transition: all 0.3s ease;
+            min-height: 400px;
         }
 
-            .card:hover {
+            .large-card:hover {
                 transform: translateY(-5px);
-                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             }
 
         .text-primary {
@@ -69,6 +70,19 @@
 
         .text-secondary {
             color: #6c757d !important;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
         }
 
         .list-group-item {

@@ -22,5 +22,12 @@ namespace TrainBookingAppMVC.DTOs.RequestModel
         [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "Payment amount must be greater than 0")]
         public decimal PaymentAmount { get; set; }
+
+        [Required(ErrorMessage = "At least one seat must be selected")]
+        public List<string> SeatNumbers { get; set; }
+        public string? TransactionReference { get; set; } // Add for Paystack transaction reference
     }
 }
+
+
+

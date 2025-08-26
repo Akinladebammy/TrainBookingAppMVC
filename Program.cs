@@ -3,6 +3,7 @@ using TrainBookinAppWeb.Data;
 using TrainBookingAppMVC.PasswordValidation;
 using TrainBookingAppMVC.Repository.Implementations;
 using TrainBookingAppMVC.Repository.Interfaces;
+using TrainBookingAppMVC.Services;
 using TrainBookingAppMVC.Services.Implementation;
 using TrainBookingAppMVC.Services.Interface;
 
@@ -21,22 +22,22 @@ builder.Services.AddControllersWithViews();
 // Repository Registration
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITrainRepository, TrainRepository>();
-builder.Services.AddScoped<ITripRepository, TripRepository>(); // Note: You have Trip, not TrainTrip
+builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-
 
 // Service Registration
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITrainService, TrainService>();
-builder.Services.AddScoped<ITripService, TripService>(); // Note: You have Trip, not TrainTrip
+builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<PaystackService>();
 
-// ADD THIS LINE - Password Hashing Service Registration
+// Password Hashing Service Registration
 builder.Services.AddScoped<IPasswordHashing, PasswordHashing>();
 
-// Cookie-based Authentication (without Identity - use your custom User model)
+// Cookie-based Authentication
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
     {
@@ -46,9 +47,10 @@ builder.Services.AddAuthentication("Cookies")
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensure cookies are sent over HTTPS
+        options.Cookie.Name = "TrainBookingAppAuth"; // Unique cookie name
+        options.Cookie.SameSite = SameSiteMode.Lax; // Use Lax for development to allow cross-domain redirects
     });
-
 
 // Authorization Configuration
 builder.Services.AddAuthorization(options =>
@@ -58,9 +60,18 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOrRegular", policy => policy.RequireRole("Admin", "Regular"));
 });
 
-// Add other useful services
+// Add session and other services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(15); // Shorter timeout to reduce overlap
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.Name = "TrainBookingAppSession"; // Unique session cookie name
+    options.Cookie.SameSite = SameSiteMode.Lax; // Use Lax for development
+});
 
 var app = builder.Build();
 
@@ -68,7 +79,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -77,7 +87,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Authentication & Authorization middleware (order matters!)
+app.UseSession(); // Enable session middleware
 app.UseAuthentication();
 app.UseAuthorization();
 

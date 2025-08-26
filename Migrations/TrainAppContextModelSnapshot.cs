@@ -37,11 +37,32 @@ namespace TrainBookingAppMVC.Migrations
                     b.Property<int>("NumberOfSeats")
                         .HasColumnType("int");
 
-                    b.Property<int>("TicketClass")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)");
+
+                    b.Property<string>("SeatNumbers")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("SeatNumbersString")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("SeatNumbers");
+
+                    b.Property<string>("TicketClass")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TransactionReference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<Guid>("TripId")
                         .HasColumnType("char(36)")
@@ -57,7 +78,11 @@ namespace TrainBookingAppMVC.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Bookings");
+                    b.ToTable("Bookings", t =>
+                        {
+                            t.Property("SeatNumbers")
+                                .HasColumnName("SeatNumbers1");
+                        });
                 });
 
             modelBuilder.Entity("TrainBookingAppMVC.Models.Train", b =>
@@ -79,6 +104,11 @@ namespace TrainBookingAppMVC.Migrations
 
                     b.Property<int>("FirstClassCapacity")
                         .HasColumnType("int");
+
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -148,8 +178,9 @@ namespace TrainBookingAppMVC.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("TicketClass")
-                        .HasColumnType("int");
+                    b.Property<string>("TicketClass")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
 
                     b.Property<int>("TotalSeats")
                         .HasColumnType("int");
@@ -185,8 +216,9 @@ namespace TrainBookingAppMVC.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<byte[]>("Salt")
                         .IsRequired()
@@ -213,9 +245,9 @@ namespace TrainBookingAppMVC.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Email = "admin@gmail.com",
                             FullName = "System Administrator",
-                            Password = "0E42FDCFF3C87923A4CC8DF157E877EF26A4F32FA237E30A8457F027FEE65E2E",
-                            Role = 1,
-                            Salt = new byte[] { 16, 94, 227, 42, 30, 196, 161, 165, 155, 49, 254, 201, 4, 132, 65, 172 },
+                            Password = "8C1005A86C85014A16B8177EAE96C0E22D59E3C31D42F3668F55C1B95A17BFD6",
+                            Role = "Admin",
+                            Salt = new byte[] { 47, 49, 234, 150, 232, 142, 147, 17, 37, 213, 13, 69, 255, 117, 120, 75 },
                             Username = "admin"
                         });
                 });

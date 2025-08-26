@@ -1,8 +1,7 @@
-﻿using TrainBookinAppMVC.Models;
+﻿using TrainBookingAppMVC.Models;
 using TrainBookingAppMVC.DTOs.RequestModel;
 using TrainBookingAppMVC.DTOs.ResponseModel;
 using TrainBookingAppMVC.DTOs.Wrapper;
-using TrainBookingAppMVC.Models;
 using TrainBookingAppMVC.Models.Enum;
 using TrainBookingAppMVC.Repository.Interfaces;
 using TrainBookingAppMVC.Services.Interface;
@@ -71,53 +70,81 @@ namespace TrainBookingAppMVC.Services.Implementation
         {
             try
             {
-                if (createTripDto.Source.ToLower() == createTripDto.Destination.ToLower())
+                if (!Enum.TryParse<Terminal>(createTripDto.Source, out var source) ||
+                    !Enum.TryParse<Terminal>(createTripDto.Destination, out var destination))
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Source and Destination cannot be the same");
-                }
-                // Validate departure time
-                if (createTripDto.DepartureTime <= DateTime.UtcNow)
-                {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Departure time must be in the future");
+                    return ResponseWrapper<TripDto>.ErrorResponse("Invalid source or destination terminal.");
                 }
 
-                // Validate train exists
+                if (source == destination)
+                {
+                    return ResponseWrapper<TripDto>.ErrorResponse("Source and destination terminals cannot be the same.");
+                }
+
+                if (createTripDto.DepartureTime <= DateTime.UtcNow)
+                {
+                    return ResponseWrapper<TripDto>.ErrorResponse("Departure time must be in the future.");
+                }
+
                 var train = await _trainRepository.GetByIdAsync(createTripDto.TrainId);
                 if (train == null)
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Train not found");
+                    return ResponseWrapper<TripDto>.ErrorResponse("Train not found.");
                 }
 
-                // Validate pricing data
+                // Define WAT time zone
+                var watTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time");
+
+                // Check for conflicting departure times within 4 hours for the same train
+                var existingTrips = await _tripRepository.GetTripsByTrainIdAsync(createTripDto.TrainId);
+                var timeWindow = TimeSpan.FromHours(6); // Adjust to TimeSpan.FromHours(10) if you want a 10-hour window
+                foreach (var existingTrip in existingTrips)
+                {
+                    var timeDifference = (createTripDto.DepartureTime - existingTrip.DepartureTime).Duration();
+                    if (timeDifference <= timeWindow)
+                    {
+                        // Convert existingTrip.DepartureTime from UTC to WAT for display
+                        var departureTimeInWAT = TimeZoneInfo.ConvertTimeFromUtc(existingTrip.DepartureTime, watTimeZone);
+                        return ResponseWrapper<TripDto>.ErrorResponse(
+                            $"Cannot create trip. Another trip for this train is scheduled at {departureTimeInWAT.ToString("g")} (WAT), " +
+                            "which is within 6 hours of the proposed departure time."
+                        );
+                    }
+                }
+
                 if (!createTripDto.Pricings.Any())
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("At least one pricing must be provided");
+                    return ResponseWrapper<TripDto>.ErrorResponse("At least one pricing must be provided.");
                 }
 
                 var trip = new Trip
                 {
                     Id = Guid.NewGuid(),
                     TrainId = createTripDto.TrainId,
-                    Source = createTripDto.Source,
-                    Destination = createTripDto.Destination,
+                    Source = source,
+                    Destination = destination,
                     DepartureTime = createTripDto.DepartureTime,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Create pricing entries
                 foreach (var pricingDto in createTripDto.Pricings)
                 {
-                    var totalSeats = GetTotalSeatsByClass(train, Enum.Parse<TicketClass>(pricingDto.TicketClass));
+                    if (!Enum.TryParse<TicketClass>(pricingDto.TicketClass, out var ticketClass))
+                    {
+                        return ResponseWrapper<TripDto>.ErrorResponse($"Invalid ticket class: {pricingDto.TicketClass}.");
+                    }
+
+                    var totalSeats = GetTotalSeatsByClass(train, ticketClass);
                     if (totalSeats == 0)
                     {
-                        return ResponseWrapper<TripDto>.ErrorResponse($"Train does not have {pricingDto.TicketClass} class seats");
+                        return ResponseWrapper<TripDto>.ErrorResponse($"Train does not have {pricingDto.TicketClass} class seats.");
                     }
 
                     trip.TripPricings.Add(new TripPricing
                     {
                         Id = Guid.NewGuid(),
                         TripId = trip.Id,
-                        TicketClass = Enum.Parse<TicketClass>(pricingDto.TicketClass),
+                        TicketClass = ticketClass,
                         Price = pricingDto.Price,
                         TotalSeats = totalSeats,
                         AvailableSeats = totalSeats
@@ -126,7 +153,7 @@ namespace TrainBookingAppMVC.Services.Implementation
 
                 var createdTrip = await _tripRepository.CreateTripAsync(trip);
                 var tripDto = MapToDto(createdTrip);
-                return ResponseWrapper<TripDto>.SuccessResponse(tripDto, "Trip created successfully");
+                return ResponseWrapper<TripDto>.SuccessResponse(tripDto, "Trip created successfully.");
             }
             catch (Exception ex)
             {
@@ -141,49 +168,60 @@ namespace TrainBookingAppMVC.Services.Implementation
                 var existingTrip = await _tripRepository.GetTripWithDetailsAsync(id);
                 if (existingTrip == null)
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Trip not found");
+                    return ResponseWrapper<TripDto>.ErrorResponse("Trip not found.");
                 }
 
-                // Check if trip has active bookings
                 if (await _tripRepository.HasActiveBookingsAsync(id))
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Cannot update trip with active bookings");
+                    return ResponseWrapper<TripDto>.ErrorResponse("Cannot update trip with active bookings.");
                 }
 
-                // Validate departure time
+                if (!Enum.TryParse<Terminal>(updateTripDto.Source, out var source) ||
+                    !Enum.TryParse<Terminal>(updateTripDto.Destination, out var destination))
+                {
+                    return ResponseWrapper<TripDto>.ErrorResponse("Invalid source or destination terminal.");
+                }
+
+                if (source == destination)
+                {
+                    return ResponseWrapper<TripDto>.ErrorResponse("Source and destination terminals cannot be the same.");
+                }
+
                 if (updateTripDto.DepartureTime <= DateTime.UtcNow)
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Departure time must be in the future");
+                    return ResponseWrapper<TripDto>.ErrorResponse("Departure time must be in the future.");
                 }
 
-                // Validate train exists
                 var train = await _trainRepository.GetByIdAsync(updateTripDto.TrainId);
                 if (train == null)
                 {
-                    return ResponseWrapper<TripDto>.ErrorResponse("Train not found");
+                    return ResponseWrapper<TripDto>.ErrorResponse("Train not found.");
                 }
 
-                // Update trip properties
                 existingTrip.TrainId = updateTripDto.TrainId;
-                existingTrip.Source = updateTripDto.Source;
-                existingTrip.Destination = updateTripDto.Destination;
+                existingTrip.Source = source;
+                existingTrip.Destination = destination;
                 existingTrip.DepartureTime = updateTripDto.DepartureTime;
 
-                // Update pricing
                 existingTrip.TripPricings.Clear();
                 foreach (var pricingDto in updateTripDto.Pricings)
                 {
-                    var totalSeats = GetTotalSeatsByClass(train, pricingDto.TicketClass);
+                    if (!Enum.TryParse<TicketClass>(pricingDto.TicketClass, out var ticketClass))
+                    {
+                        return ResponseWrapper<TripDto>.ErrorResponse($"Invalid ticket class: {pricingDto.TicketClass}.");
+                    }
+
+                    var totalSeats = GetTotalSeatsByClass(train, ticketClass);
                     if (totalSeats == 0)
                     {
-                        return ResponseWrapper<TripDto>.ErrorResponse($"Train does not have {pricingDto.TicketClass} class seats");
+                        return ResponseWrapper<TripDto>.ErrorResponse($"Train does not have {pricingDto.TicketClass} class seats.");
                     }
 
                     existingTrip.TripPricings.Add(new TripPricing
                     {
                         Id = pricingDto.Id ?? Guid.NewGuid(),
                         TripId = existingTrip.Id,
-                        TicketClass = pricingDto.TicketClass,
+                        TicketClass = ticketClass,
                         Price = pricingDto.Price,
                         TotalSeats = totalSeats,
                         AvailableSeats = totalSeats
@@ -192,7 +230,7 @@ namespace TrainBookingAppMVC.Services.Implementation
 
                 var updatedTrip = await _tripRepository.UpdateTripAsync(existingTrip);
                 var tripDto = MapToDto(updatedTrip);
-                return ResponseWrapper<TripDto>.SuccessResponse(tripDto, "Trip updated successfully");
+                return ResponseWrapper<TripDto>.SuccessResponse(tripDto, "Trip updated successfully.");
             }
             catch (Exception ex)
             {
@@ -204,28 +242,20 @@ namespace TrainBookingAppMVC.Services.Implementation
         {
             try
             {
-                // Check if trip exists
-                var tripExists = await _tripRepository.TripExistsAsync(id);
-                if (!tripExists)
+                if (!await _tripRepository.TripExistsAsync(id))
                 {
-                    return ResponseWrapper.ErrorResponse("Trip not found");
+                    return ResponseWrapper.ErrorResponse("Trip not found.");
                 }
 
-                // Check if trip has active bookings
                 if (await _tripRepository.HasActiveBookingsAsync(id))
                 {
-                    return ResponseWrapper.ErrorResponse("Cannot delete trip with active bookings");
+                    return ResponseWrapper.ErrorResponse("Cannot delete trip with active bookings.");
                 }
 
                 var result = await _tripRepository.DeleteTripAsync(id);
-                if (result)
-                {
-                    return ResponseWrapper.SuccessResponse("Trip deleted successfully");
-                }
-                else
-                {
-                    return ResponseWrapper.ErrorResponse("Failed to delete trip");
-                }
+                return result
+                    ? ResponseWrapper.SuccessResponse("Trip deleted successfully.")
+                    : ResponseWrapper.ErrorResponse("Failed to delete trip.");
             }
             catch (Exception ex)
             {
@@ -241,8 +271,8 @@ namespace TrainBookingAppMVC.Services.Implementation
                 TrainId = trip.TrainId,
                 TrainNumber = trip.Train?.TrainNumber ?? string.Empty,
                 TrainName = trip.Train?.Name ?? string.Empty,
-                Source = trip.Source,
-                Destination = trip.Destination,
+                Source = trip.Source.ToString(),
+                Destination = trip.Destination.ToString(),
                 DepartureTime = trip.DepartureTime,
                 IsExpired = trip.IsExpired,
                 Pricings = trip.TripPricings.Select(tp => new TripPricingDto

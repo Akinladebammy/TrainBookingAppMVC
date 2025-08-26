@@ -34,10 +34,29 @@ namespace TrainBookingAppMVC.Repository.Implementations
             return await _context.Trains.OrderBy(t => t.Id).ToListAsync();
         }
 
-        public async Task<bool> AddAsync(Train train)
+        public async Task<bool> AddAsync(Train train, IFormFile? imageFile = null)
         {
             try
             {
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    // Define the path to save the image (e.g., wwwroot/images/trains)
+                    var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(imageFile.FileName)}";
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/trains", fileName);
+
+                    // Ensure the directory exists
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                    // Save the image file
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await imageFile.CopyToAsync(stream);
+                    }
+
+                    // Store the relative path in the database
+                    train.ImagePath = $"/images/trains/{fileName}";
+                }
+
                 _context.Trains.Add(train);
                 return await _context.SaveChangesAsync() > 0;
             }
@@ -47,11 +66,47 @@ namespace TrainBookingAppMVC.Repository.Implementations
             }
         }
 
-        public async Task<bool> UpdateAsync(Train train)
+        public async Task<bool> UpdateAsync(Train train, IFormFile? imageFile = null)
         {
             try
             {
-                _context.Entry(train).State = EntityState.Modified;
+                var existingTrain = await GetByIdAsync(train.Id);
+                if (existingTrain == null) return false;
+
+                // Update train properties
+                existingTrain.TrainNumber = train.TrainNumber;
+                existingTrain.Name = train.Name;
+                existingTrain.Description = train.Description;
+                existingTrain.EconomyCapacity = train.EconomyCapacity;
+                existingTrain.BusinessCapacity = train.BusinessCapacity;
+                existingTrain.FirstClassCapacity = train.FirstClassCapacity;
+
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    // Delete old image if it exists
+                    if (!string.IsNullOrEmpty(existingTrain.ImagePath))
+                    {
+                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingTrain.ImagePath.TrimStart('/'));
+                        if (File.Exists(oldImagePath))
+                        {
+                            File.Delete(oldImagePath);
+                        }
+                    }
+
+                    // Save new image
+                    var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(imageFile.FileName)}";
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/trains", fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await imageFile.CopyToAsync(stream);
+                    }
+
+                    existingTrain.ImagePath = $"/images/trains/{fileName}";
+                }
+
+                _context.Entry(existingTrain).State = EntityState.Modified;
                 return await _context.SaveChangesAsync() > 0;
             }
             catch
@@ -66,6 +121,16 @@ namespace TrainBookingAppMVC.Repository.Implementations
             {
                 var train = await GetByIdAsync(id);
                 if (train == null) return false;
+
+                // Delete associated image if it exists
+                if (!string.IsNullOrEmpty(train.ImagePath))
+                {
+                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", train.ImagePath.TrimStart('/'));
+                    if (File.Exists(imagePath))
+                    {
+                        File.Delete(imagePath);
+                    }
+                }
 
                 _context.Trains.Remove(train);
                 return await _context.SaveChangesAsync() > 0;
@@ -103,13 +168,9 @@ namespace TrainBookingAppMVC.Repository.Implementations
 
         public async Task<int> GetMaxBookedSeatsForActiveTripsByTrainIdAsync(Guid trainId)
         {
-            // Get the train to calculate total capacity
             var train = await _context.Trains.FirstOrDefaultAsync(t => t.Id == trainId);
             if (train == null) return 0;
 
-            var totalCapacity = train.TotalCapacity;
-
-            // Get active trips for this train
             var activeTrips = await _context.Trips
                 .Where(t => t.TrainId == trainId && t.DepartureTime > DateTime.UtcNow && !t.IsExpired)
                 .Include(t => t.TripPricings)
@@ -117,7 +178,6 @@ namespace TrainBookingAppMVC.Repository.Implementations
 
             if (!activeTrips.Any()) return 0;
 
-            // Calculate max booked seats across all active trips
             int maxBookedSeats = 0;
             foreach (var trip in activeTrips)
             {
@@ -150,7 +210,6 @@ namespace TrainBookingAppMVC.Repository.Implementations
                 {
                     int bookedSeats = pricing.TotalSeats - pricing.AvailableSeats;
 
-                    // Update total seats and available seats based on class
                     int newTotalSeats = pricing.TicketClass switch
                     {
                         Models.Enum.TicketClass.Economy => newEconomyCapacity,

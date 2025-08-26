@@ -5,6 +5,8 @@ using TrainBookingAppMVC.DTOs.RequestModel;
 using TrainBookingAppMVC.DTOs.ResponseModel;
 using TrainBookingAppMVC.Models.Enum;
 using TrainBookingAppMVC.Services.Interface;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace TrainBookingAppMVC.Controllers
 {
@@ -137,7 +139,7 @@ namespace TrainBookingAppMVC.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateTrain(CreateTrainRequestModel request)
+        public async Task<IActionResult> CreateTrain(CreateTrainRequestModel request, IFormFile? imageFile)
         {
             ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
             ViewBag.IsAdmin = User.IsInRole("Admin");
@@ -150,7 +152,23 @@ namespace TrainBookingAppMVC.Controllers
 
             try
             {
-                var result = await _trainService.CreateTrainAsync(request);
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                    var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        ModelState.AddModelError("ImageFile", "Only JPG, JPEG, and PNG files are allowed.");
+                        return View(request);
+                    }
+                    if (imageFile.Length > 5 * 1024 * 1024) // 5MB limit
+                    {
+                        ModelState.AddModelError("ImageFile", "Image file size cannot exceed 5MB.");
+                        return View(request);
+                    }
+                }
+
+                var result = await _trainService.CreateTrainAsync(request, imageFile);
                 if (result.Success)
                 {
                     TempData["SuccessMessage"] = "Train created successfully!";
@@ -198,6 +216,7 @@ namespace TrainBookingAppMVC.Controllers
                     Description = result.Data.Description
                 };
 
+                ViewBag.CurrentImagePath = result.Data.ImagePath;
                 return View(updateModel);
             }
             catch (Exception ex)
@@ -209,7 +228,7 @@ namespace TrainBookingAppMVC.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditTrain(Guid id, UpdateTrainRequestModel request)
+        public async Task<IActionResult> EditTrain(Guid id, UpdateTrainRequestModel request, IFormFile? imageFile)
         {
             ViewBag.IsAuthenticated = User.Identity.IsAuthenticated;
             ViewBag.IsAdmin = User.IsInRole("Admin");
@@ -223,12 +242,34 @@ namespace TrainBookingAppMVC.Controllers
 
             if (!ModelState.IsValid)
             {
+                var trainResult = await _trainService.GetTrainByIdAsync(id);
+                ViewBag.CurrentImagePath = trainResult.Success ? trainResult.Data.ImagePath : null;
                 return View(request);
             }
 
             try
             {
-                var result = await _trainService.UpdateTrainAsync(id, request);
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                    var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        ModelState.AddModelError("ImageFile", "Only JPG, JPEG, and PNG files are allowed.");
+                        var trainResult = await _trainService.GetTrainByIdAsync(id);
+                        ViewBag.CurrentImagePath = trainResult.Success ? trainResult.Data.ImagePath : null;
+                        return View(request);
+                    }
+                    if (imageFile.Length > 5 * 1024 * 1024)
+                    {
+                        ModelState.AddModelError("ImageFile", "Image file size cannot exceed 5MB.");
+                        var trainResult = await _trainService.GetTrainByIdAsync(id);
+                        ViewBag.CurrentImagePath = trainResult.Success ? trainResult.Data.ImagePath : null;
+                        return View(request);
+                    }
+                }
+
+                var result = await _trainService.UpdateTrainAsync(id, request, imageFile);
                 if (result.Success)
                 {
                     TempData["SuccessMessage"] = "Train updated successfully!";
@@ -236,11 +277,15 @@ namespace TrainBookingAppMVC.Controllers
                 }
 
                 TempData["ErrorMessage"] = result.Message;
+                var trainResultError = await _trainService.GetTrainByIdAsync(id);
+                ViewBag.CurrentImagePath = trainResultError.Success ? trainResultError.Data.ImagePath : null;
                 return View(request);
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Error updating train: {ex.Message}";
+                var trainResult = await _trainService.GetTrainByIdAsync(id);
+                ViewBag.CurrentImagePath = trainResult.Success ? trainResult.Data.ImagePath : null;
                 return View(request);
             }
         }
@@ -369,11 +414,14 @@ namespace TrainBookingAppMVC.Controllers
             {
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(new CreateTripDto());
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Error loading create trip form: {ex.Message}";
+                ViewBag.Trains = new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(new CreateTripDto());
             }
         }
@@ -386,16 +434,21 @@ namespace TrainBookingAppMVC.Controllers
             ViewBag.IsAdmin = User.IsInRole("Admin");
             ViewBag.FullName = User.Identity.Name;
 
+            if (createTripDto.Source == createTripDto.Destination)
+            {
+                ModelState.AddModelError("Destination", "Source and destination terminals cannot be the same.");
+            }
+
             if (!ModelState.IsValid)
             {
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(createTripDto);
             }
 
             try
             {
-                // Convert DepartureTime from WAT to UTC
                 if (createTripDto.DepartureTime.Kind != DateTimeKind.Utc)
                 {
                     createTripDto.DepartureTime = TimeZoneInfo.ConvertTimeToUtc(createTripDto.DepartureTime, _watTimeZone);
@@ -411,6 +464,7 @@ namespace TrainBookingAppMVC.Controllers
                 TempData["ErrorMessage"] = result.Message;
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(createTripDto);
             }
             catch (Exception ex)
@@ -418,6 +472,7 @@ namespace TrainBookingAppMVC.Controllers
                 TempData["ErrorMessage"] = $"Error creating trip: {ex.Message}";
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(createTripDto);
             }
         }
@@ -452,13 +507,14 @@ namespace TrainBookingAppMVC.Controllers
                     Pricings = result.Data.Pricings.Select(p => new UpdateTripPricingDto
                     {
                         Id = p.Id,
-                        TicketClass = Enum.Parse<TicketClass>(p.TicketClass),
+                        TicketClass = p.TicketClass,
                         Price = p.Price
                     }).ToList()
                 };
 
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(updateModel);
             }
             catch (Exception ex)
@@ -476,11 +532,17 @@ namespace TrainBookingAppMVC.Controllers
             ViewBag.IsAdmin = User.IsInRole("Admin");
             ViewBag.FullName = User.Identity.Name;
 
+            if (updateTripDto.Source == updateTripDto.Destination)
+            {
+                ModelState.AddModelError("Destination", "Source and destination terminals cannot be the same.");
+            }
+
             if (id == Guid.Empty)
             {
                 TempData["ErrorMessage"] = "Invalid trip ID.";
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(updateTripDto);
             }
 
@@ -488,12 +550,12 @@ namespace TrainBookingAppMVC.Controllers
             {
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(updateTripDto);
             }
 
             try
             {
-                // Convert DepartureTime from WAT to UTC
                 if (updateTripDto.DepartureTime.Kind != DateTimeKind.Utc)
                 {
                     updateTripDto.DepartureTime = TimeZoneInfo.ConvertTimeToUtc(updateTripDto.DepartureTime, _watTimeZone);
@@ -509,6 +571,7 @@ namespace TrainBookingAppMVC.Controllers
                 TempData["ErrorMessage"] = result.Message;
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(updateTripDto);
             }
             catch (Exception ex)
@@ -516,6 +579,7 @@ namespace TrainBookingAppMVC.Controllers
                 TempData["ErrorMessage"] = $"Error updating trip: {ex.Message}";
                 var trainsResult = await _trainService.GetAllTrainsAsync();
                 ViewBag.Trains = trainsResult.Success ? trainsResult.Data.Trains : new List<TrainResponseModel>();
+                ViewBag.Terminals = Enum.GetNames(typeof(Terminal)).ToList();
                 return View(updateTripDto);
             }
         }

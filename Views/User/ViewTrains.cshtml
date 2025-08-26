@@ -23,6 +23,11 @@
         </div>
     }
 
+    @if (ViewBag.IsAuthenticated)
+    {
+        <p class="fs-5">Welcome, @ViewBag.FullName!</p>
+    }
+
     <div class="col-md-12 mb-5">
         <div class="card shadow-lg border-0 large-card">
             <div class="card-body p-4">
@@ -36,6 +41,7 @@
                         <table class="table table-hover align-middle table-lg">
                             <thead class="table-dark">
                                 <tr>
+                                    <th>Image</th>
                                     <th>Train Number</th>
                                     <th>Name</th>
                                     <th>Economy Seats</th>
@@ -49,6 +55,16 @@
                                 @foreach (var train in Model.Trains)
                                 {
                                     <tr>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(train.ImagePath))
+                                            {
+                                                <img src="@train.ImagePath" alt="@train.Name" class="train-image-small" style="max-width: 100px; max-height: 100px; object-fit: cover;" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No image</span>
+                                            }
+                                        </td>
                                         <td>@train.TrainNumber</td>
                                         <td>@train.Name</td>
                                         <td>@train.EconomyCapacity</td>
@@ -112,50 +128,5 @@
             color: #6c757d !important;
             font-weight: bold;
         }
-
-        .table-lg th, .table-lg td {
-            font-size: 1.1rem;
-            padding: 1rem;
-            font-weight: 500;
-        }
-
-        .fs-2 {
-            font-size: 2rem !important;
-            font-weight: bold !important;
-        }
-
-        .fs-5 {
-            font-size: 1.25rem !important;
-            font-weight: 500;
-        }
-
-        .btn-lg {
-            font-size: 1.1rem;
-            padding: 0.75rem 1.5rem;
-            font-weight: bold;
-        }
-
-        .display-4 {
-            font-weight: 700 !important;
-        }
-
-        .alert {
-            font-weight: 500;
-        }
     </style>
-}
-
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const masy
-            const buttons = document.querySelectorAll('.custom-btn');
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    btn.style.opacity = '0.8';
-                    setTimeout(() => btn.style.opacity = '1', 200);
-                });
-            });
-        });
-    </script>
 }

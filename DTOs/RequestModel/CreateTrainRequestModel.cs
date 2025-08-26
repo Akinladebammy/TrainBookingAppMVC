@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace TrainBookingAppMVC.DTOs.RequestModel
 {
@@ -16,11 +17,9 @@ namespace TrainBookingAppMVC.DTOs.RequestModel
         [Range(1, 1000, ErrorMessage = "Capacity must be between 1 and 1000")]
         public int EconomicCapacity { get; set; }
 
-
         [Required]
         [Range(1, 1000, ErrorMessage = "Capacity must be between 1 and 1000")]
         public int BusinessCapacity { get; set; }
-
 
         [Required]
         [Range(1, 1000, ErrorMessage = "Capacity must be between 1 and 1000")]
@@ -28,5 +27,7 @@ namespace TrainBookingAppMVC.DTOs.RequestModel
 
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
         public string Description { get; set; } = string.Empty;
+
+        public IFormFile? ImageFile { get; set; }
     }
 }

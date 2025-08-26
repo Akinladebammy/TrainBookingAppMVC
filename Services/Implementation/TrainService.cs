@@ -1,8 +1,8 @@
-﻿using TrainBookinAppMVC.Models;
+﻿using Microsoft.AspNetCore.Http;
+using TrainBookingAppMVC.Models;
 using TrainBookingAppMVC.DTOs.RequestModel;
 using TrainBookingAppMVC.DTOs.ResponseModel;
 using TrainBookingAppMVC.DTOs.Wrapper;
-using TrainBookingAppMVC.Models;
 using TrainBookingAppMVC.Repository.Interfaces;
 using TrainBookingAppMVC.Services.Interface;
 
@@ -17,36 +17,43 @@ namespace TrainBookingAppMVC.Services.Implementation
             _trainRepository = trainRepository;
         }
 
-        public async Task<ResponseWrapper<TrainResponseModel>> CreateTrainAsync(CreateTrainRequestModel request)
+        public async Task<ResponseWrapper<TrainResponseModel>> CreateTrainAsync(CreateTrainRequestModel request, IFormFile? imageFile = null)
         {
-            // Check if train number already exists
-            if (await _trainRepository.ExistsByTrainNumberAsync(request.TrainNumber))
+            try
             {
-                return ResponseWrapper<TrainResponseModel>.ErrorResponse("Train number already exists.");
+                if (await _trainRepository.ExistsByTrainNumberAsync(request.TrainNumber))
+                {
+                    return ResponseWrapper<TrainResponseModel>.ErrorResponse("Train number already exists.");
+                }
+
+                var train = new Train
+                {
+                    Id = Guid.NewGuid(),
+                    TrainNumber = request.TrainNumber,
+                    Name = request.Name,
+                    EconomyCapacity = request.EconomicCapacity,
+                    BusinessCapacity = request.BusinessCapacity,
+                    FirstClassCapacity = request.FirstClassCapacity,
+                    Description = request.Description
+                };
+
+                bool success = await _trainRepository.AddAsync(train, imageFile);
+
+                if (success)
+                {
+                    return ResponseWrapper<TrainResponseModel>.SuccessResponse(
+                        MapToResponse(train),
+                        "Train added successfully."
+                    );
+                }
+
+                return ResponseWrapper<TrainResponseModel>.ErrorResponse("Failed to add train.");
             }
-
-            var train = new Train
+            catch (Exception ex)
             {
-                Id = Guid.NewGuid(),
-                TrainNumber = request.TrainNumber,
-                Name = request.Name,
-                EconomyCapacity = request.EconomicCapacity,
-                BusinessCapacity = request.BusinessCapacity,
-                FirstClassCapacity = request.FirstClassCapacity,
-                Description = request.Description
-            };
-
-            bool success = await _trainRepository.AddAsync(train);
-
-            if (success)
-            {
-                return ResponseWrapper<TrainResponseModel>.SuccessResponse(
-                    MapToResponse(train),
-                    "Train added successfully."
-                );
+                Console.WriteLine($"Error in CreateTrainAsync: {ex}");
+                return ResponseWrapper<TrainResponseModel>.ErrorResponse($"Failed to add train: {ex.Message}");
             }
-
-            return ResponseWrapper<TrainResponseModel>.ErrorResponse("Failed to add train.");
         }
 
         public async Task<ResponseWrapper<TrainListResponseModel>> GetAllTrainsAsync()
@@ -137,93 +144,99 @@ namespace TrainBookingAppMVC.Services.Implementation
             }
         }
 
-        public async Task<ResponseWrapper<TrainResponseModel>> UpdateTrainAsync(Guid id, UpdateTrainRequestModel request)
+        public async Task<ResponseWrapper<TrainResponseModel>> UpdateTrainAsync(Guid id, UpdateTrainRequestModel request, IFormFile? imageFile = null)
         {
-            // Check if train exists
-            var existingTrain = await _trainRepository.GetByIdAsync(id);
-            if (existingTrain == null)
+            try
             {
-                return ResponseWrapper<TrainResponseModel>.ErrorResponse("Train not found.");
-            }
-
-            // Check if new train number already exists for another train
-            if (await _trainRepository.ExistsByTrainNumberAsync(request.TrainNumber, id))
-            {
-                return ResponseWrapper<TrainResponseModel>.ErrorResponse("Train number already exists for another train.");
-            }
-
-            // Check if there are active trips and if new capacity affects them
-            int activeTripsCount = await _trainRepository.GetActiveTripsCountAsync(id);
-            if (activeTripsCount > 0)
-            {
-                int maxBookedSeats = await _trainRepository.GetMaxBookedSeatsForActiveTripsByTrainIdAsync(id);
-                int newTotalCapacity = request.EconomicCapacity + request.BusinessCapacity + request.FirstClassCapacity;
-
-                if (newTotalCapacity < maxBookedSeats)
+                var existingTrain = await _trainRepository.GetByIdAsync(id);
+                if (existingTrain == null)
                 {
-                    return ResponseWrapper<TrainResponseModel>.ErrorResponse(
-                        $"Cannot update capacity to {newTotalCapacity} because there are active trips with {maxBookedSeats} booked seats. Please ensure the new capacity is at least equal to the maximum booked seats for active trips."
-                    );
+                    return ResponseWrapper<TrainResponseModel>.ErrorResponse("Train not found.");
                 }
-            }
 
-            // Update train properties
-            existingTrain.TrainNumber = request.TrainNumber;
-            existingTrain.Name = request.Name;
-            existingTrain.EconomyCapacity = request.EconomicCapacity;
-            existingTrain.BusinessCapacity = request.BusinessCapacity;
-            existingTrain.FirstClassCapacity = request.FirstClassCapacity;
-            existingTrain.Description = request.Description;
+                if (await _trainRepository.ExistsByTrainNumberAsync(request.TrainNumber, id))
+                {
+                    return ResponseWrapper<TrainResponseModel>.ErrorResponse("Train number already exists for another train.");
+                }
 
-            bool success = await _trainRepository.UpdateAsync(existingTrain);
-
-            if (success)
-            {
-                // If capacity changed and there are active trips, update available seats
+                int activeTripsCount = await _trainRepository.GetActiveTripsCountAsync(id);
                 if (activeTripsCount > 0)
                 {
-                    await _trainRepository.UpdateAvailableSeatsForActiveTripsAsync(
-                        id,
-                        request.EconomicCapacity,
-                        request.BusinessCapacity,
-                        request.FirstClassCapacity
+                    int maxBookedSeats = await _trainRepository.GetMaxBookedSeatsForActiveTripsByTrainIdAsync(id);
+                    int newTotalCapacity = request.EconomicCapacity + request.BusinessCapacity + request.FirstClassCapacity;
+
+                    if (newTotalCapacity < maxBookedSeats)
+                    {
+                        return ResponseWrapper<TrainResponseModel>.ErrorResponse(
+                            $"Cannot update capacity to {newTotalCapacity} because there are active trips with {maxBookedSeats} booked seats."
+                        );
+                    }
+                }
+
+                existingTrain.TrainNumber = request.TrainNumber;
+                existingTrain.Name = request.Name;
+                existingTrain.EconomyCapacity = request.EconomicCapacity;
+                existingTrain.BusinessCapacity = request.BusinessCapacity;
+                existingTrain.FirstClassCapacity = request.FirstClassCapacity;
+                existingTrain.Description = request.Description;
+
+                bool success = await _trainRepository.UpdateAsync(existingTrain, imageFile);
+
+                if (success)
+                {
+                    if (activeTripsCount > 0)
+                    {
+                        await _trainRepository.UpdateAvailableSeatsForActiveTripsAsync(
+                            id,
+                            request.EconomicCapacity,
+                            request.BusinessCapacity,
+                            request.FirstClassCapacity
+                        );
+                    }
+
+                    var message = "Train updated successfully.";
+                    if (activeTripsCount > 0)
+                    {
+                        message += $" Available seats for {activeTripsCount} active trip(s) have been adjusted accordingly.";
+                    }
+
+                    return ResponseWrapper<TrainResponseModel>.SuccessResponse(
+                        MapToResponse(existingTrain),
+                        message
                     );
                 }
 
-                var message = "Train updated successfully.";
-                if (activeTripsCount > 0)
-                {
-                    message += $" Available seats for {activeTripsCount} active trip(s) have been adjusted accordingly.";
-                }
-
-                return ResponseWrapper<TrainResponseModel>.SuccessResponse(
-                    MapToResponse(existingTrain),
-                    message
-                );
+                return ResponseWrapper<TrainResponseModel>.ErrorResponse("Failed to update train.");
             }
-
-            return ResponseWrapper<TrainResponseModel>.ErrorResponse("Failed to update train.");
+            catch (Exception ex)
+            {
+                return ResponseWrapper<TrainResponseModel>.ErrorResponse($"Failed to update train: {ex.Message}");
+            }
         }
 
         public async Task<ResponseWrapper> DeleteTrainAsync(Guid id)
         {
-            // Check if train exists
-            if (!await _trainRepository.ExistsAsync(id))
+            try
             {
-                return ResponseWrapper.ErrorResponse("Train not found.");
-            }
+                if (!await _trainRepository.ExistsAsync(id))
+                {
+                    return ResponseWrapper.ErrorResponse("Train not found.");
+                }
 
-            // Check if there are active trips for this train
-            if (await _trainRepository.HasActiveTripsAsync(id))
+                if (await _trainRepository.HasActiveTripsAsync(id))
+                {
+                    return ResponseWrapper.ErrorResponse("Cannot delete train because there are active trips for it.");
+                }
+
+                bool success = await _trainRepository.DeleteAsync(id);
+                return success
+                    ? ResponseWrapper.SuccessResponse("Train deleted successfully.")
+                    : ResponseWrapper.ErrorResponse("Failed to delete train.");
+            }
+            catch (Exception ex)
             {
-                return ResponseWrapper.ErrorResponse("Cannot delete train because there are active trips for it. You need to delete all trips for this train first.");
+                return ResponseWrapper.ErrorResponse($"Failed to delete train: {ex.Message}");
             }
-
-            bool success = await _trainRepository.DeleteAsync(id);
-
-            return success
-                ? ResponseWrapper.SuccessResponse("Train deleted successfully.")
-                : ResponseWrapper.ErrorResponse("Failed to delete train.");
         }
 
         public async Task<ResponseWrapper> EnsureSampleTrainsExistAsync()
@@ -232,44 +245,78 @@ namespace TrainBookingAppMVC.Services.Implementation
             {
                 if (!await _trainRepository.HasTrainsAsync())
                 {
-                    var sampleTrains = new List<CreateTrainRequestModel>
-                    {
-                        new CreateTrainRequestModel
-                        {
-                            TrainNumber = "TR101",
-                            Name = "Express Voyager",
-                            EconomicCapacity = 120,
-                            BusinessCapacity = 30,
-                            FirstClassCapacity = 20,
-                            Description = "High-speed passenger train with modern amenities"
-                        },
-                        new CreateTrainRequestModel
-                        {
-                            TrainNumber = "TR102",
-                            Name = "Metro Cruiser",
-                            EconomicCapacity = 150,
-                            BusinessCapacity = 40,
-                            FirstClassCapacity = 25,
-                            Description = "Comfortable train for mid-range journeys"
-                        },
-                        new CreateTrainRequestModel
-                        {
-                            TrainNumber = "TR103",
-                            Name = "Royal Transit",
-                            EconomicCapacity = 100,
-                            BusinessCapacity = 50,
-                            FirstClassCapacity = 30,
-                            Description = "Luxury train with premium services and facilities"
-                        }
-                    };
+                    var sampleTrains = new List<(CreateTrainRequestModel Request, string ImagePath)>
+                       {
+                           (
+                               new CreateTrainRequestModel
+                               {
+                                   TrainNumber = "TR101",
+                                   Name = "Express Voyager",
+                                   EconomicCapacity = 45,
+                                   BusinessCapacity = 30,
+                                   FirstClassCapacity = 20,
+                                   Description = "High-speed passenger train with modern amenities"
+                               },
+                               "/images/sample-trains/express-voyager.png"
+                           ),
+                           (
+                               new CreateTrainRequestModel
+                               {
+                                   TrainNumber = "TR102",
+                                   Name = "Metro Cruiser",
+                                   EconomicCapacity = 50,
+                                   BusinessCapacity = 40,
+                                   FirstClassCapacity = 25,
+                                   Description = "Comfortable train for mid-range journeys"
+                               },
+                               "/images/sample-trains/metro-cruiser.jpeg"
+                           ),
+                           (
+                               new CreateTrainRequestModel
+                               {
+                                   TrainNumber = "TR103",
+                                   Name = "Royal Transit",
+                                   EconomicCapacity = 50,
+                                   BusinessCapacity = 30,
+                                   FirstClassCapacity = 20,
+                                   Description = "Luxury train with premium services and facilities"
+                               },
+                               "/images/sample-trains/royal-transit.jpg"
+                           )
+                       };
 
                     int successCount = 0;
-                    foreach (var sampleTrain in sampleTrains)
+                    foreach (var (request, imagePath) in sampleTrains)
                     {
-                        var result = await CreateTrainAsync(sampleTrain);
-                        if (result.Success)
+                        if (await _trainRepository.ExistsByTrainNumberAsync(request.TrainNumber))
                         {
+                            Console.WriteLine($"Train {request.TrainNumber} already exists, skipping.");
+                            continue;
+                        }
+
+                        var train = new Train
+                        {
+                            Id = Guid.NewGuid(),
+                            TrainNumber = request.TrainNumber,
+                            Name = request.Name,
+                            EconomyCapacity = request.EconomicCapacity,
+                            BusinessCapacity = request.BusinessCapacity,
+                            FirstClassCapacity = request.FirstClassCapacity,
+                            Description = request.Description,
+                            ImagePath = File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", imagePath.TrimStart('/')))
+                                ? imagePath
+                                : null
+                        };
+
+                        bool success = await _trainRepository.AddAsync(train, null);
+                        if (success)
+                        {
+                            Console.WriteLine($"Successfully added sample train {request.TrainNumber} with ImagePath: {train.ImagePath}");
                             successCount++;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Failed to add sample train {request.TrainNumber}");
                         }
                     }
 
@@ -291,6 +338,7 @@ namespace TrainBookingAppMVC.Services.Implementation
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in EnsureSampleTrainsExistAsync: {ex}");
                 return ResponseWrapper.ErrorResponse($"Failed to initialize sample trains: {ex.Message}");
             }
         }
@@ -305,8 +353,10 @@ namespace TrainBookingAppMVC.Services.Implementation
                 EconomyCapacity = train.EconomyCapacity,
                 BusinessCapacity = train.BusinessCapacity,
                 FirstClassCapacity = train.FirstClassCapacity,
-                Description = train.Description
+                Description = train.Description,
+                ImagePath = train.ImagePath
             };
         }
     }
 }
+   

@@ -9,8 +9,8 @@ namespace TrainBookingAppMVC.Services.Interface
         Task<ResponseWrapper<BookingListResponseModel>> GetAllBookingsAsync();
         Task<ResponseWrapper<BookingListResponseModel>> GetBookingsByUserIdAsync(Guid userId);
         Task<ResponseWrapper<BookingResponseModel>> GetBookingByIdAsync(Guid id);
+        Task<ResponseWrapper<List<string>>> GetAvailableSeatsAsync(Guid tripId, string ticketClass);
         Task<ResponseWrapper<BookingCreationResponseModel>> CreateBookingAsync(CreateBookingRequestModel request);
         Task<ResponseWrapper<string>> CancelBookingAsync(Guid bookingId, CancelBookingRequestModel request);
     }
-
 }

@@ -8,7 +8,7 @@
 }
 
 <div class="container mt-5">
-    <h1 class="mb-5 text-primary fw-bold display-4">Bookings for @user.FullName</h1>
+    <h1 class="mb-5 text-primary fw-bold display-4">Bookings for @user?.FullName</h1>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -25,13 +25,12 @@
         </div>
     }
 
-    <!-- Bookings Section -->
     <div class="col-md-12 mb-5">
         <div class="card shadow-lg border-0 large-card">
             <div class="card-body p-4">
                 <h3 class="card-title text-secondary mb-4 fw-bold fs-2">User Bookings</h3>
                 <div class="d-flex gap-3 mb-4">
-                    <a href="@Url.Action("Users")" class="btn btn-outline-secondary btn-lg custom-btn">Back to Users</a>
+                    <a href="@Url.Action("Users")" class="btn btn-primary btn-lg custom-btn">Back to Users</a>
                 </div>
                 @if (bookings.Any())
                 {
@@ -59,8 +58,8 @@
                                         <td>@booking.Destination</td>
                                         <td>@TimeZoneInfo.ConvertTimeFromUtc(booking.DepartureTime, timeZone).ToString("g")</td>
                                         <td>@booking.TicketClass</td>
-                                        <td>@booking.NumberOfSeats</td>
-                                        <td>₦@booking.TotalPrice</td>
+                                        <td>@(booking.SeatNumbers.Any() ? string.Join(", ", booking.SeatNumbers) : "N/A")</td>
+                                        <td>₦@booking.TotalPrice.ToString("F2")</td>
                                         <td>@TimeZoneInfo.ConvertTimeFromUtc(booking.BookingDate, timeZone).ToString("g")</td>
                                         <td>@(booking.IsCancelled ? "Cancelled" : booking.TripStatus)</td>
                                     </tr>

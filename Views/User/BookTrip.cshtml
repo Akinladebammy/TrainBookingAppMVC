@@ -1,15 +1,15 @@
-﻿@using TrainBookingAppMVC.DTOs.RequestModel
-@using TrainBookingAppMVC.DTOs.ResponseModel
-@model CreateBookingRequestModel
-
+﻿@model TrainBookingAppMVC.DTOs.RequestModel.CreateBookingRequestModel
 @{
     ViewData["Title"] = "Book Trip";
-    var trip = ViewBag.Trip as TripDto;
+    var trip = ViewBag.Trip as TrainBookingAppMVC.DTOs.ResponseModel.TripDto;
+    var economySeats = ViewBag.EconomySeats as List<string> ?? new List<string>();
+    var businessSeats = ViewBag.BusinessSeats as List<string> ?? new List<string>();
+    var firstClassSeats = ViewBag.FirstClassSeats as List<string> ?? new List<string>();
     var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
 }
 
 <div class="container mt-5">
-    <h1 class="mb-5 text-primary fw-bold display-4">Book Trip: @trip.TrainName</h1>
+    <h1 class="mb-5 text-primary fw-bold display-4">Book a Trip</h1>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -29,38 +29,121 @@
     <div class="col-md-8 offset-md-2">
         <div class="card shadow-lg border-0 large-card">
             <div class="card-body p-4">
-                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Booking Details</h3>
-                <div class="mb-4">
-                    <p><strong>Train:</strong> @trip.TrainName (@trip.TrainNumber)</p>
-                    <p><strong>Route:</strong> @trip.Source to @trip.Destination</p>
-                    <p><strong>Departure:</strong> @TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("g")</p>
-                </div>
-                <form asp-action="BookTrip" method="post">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Trip Information</h3>
+                @if (trip != null)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Train:</strong> @trip.TrainName (@trip.TrainNumber)</p>
+                            <p><strong>Route:</strong> @trip.Source to @trip.Destination</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Departure:</strong> @TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("g")</p>
+                            <p><strong>Available Classes:</strong> @(trip.Pricings.Any() ? string.Join(", ", trip.Pricings.Select(p => p.TicketClass)) : "N/A")</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <h5><strong>Pricing and Availability:</strong></h5>
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Ticket Class</th>
+                                        <th>Price per Seat (₦)</th>
+                                        <th>Available Seats</th>
+                                        <th>Total Seats</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pricing in trip.Pricings)
+                                    {
+                                        <tr>
+                                            <td>@pricing.TicketClass</td>
+                                            <td>@pricing.Price.ToString("F2")</td>
+                                            <td>@pricing.AvailableSeats</td>
+                                            <td>@pricing.TotalSeats</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-danger">Trip information not available.</p>
+                }
+
+                <h4 class="mt-4 text-secondary fw-bold">Book Your Seats</h4>
+                <form asp-action="BookTrip" method="post" id="bookingForm">
                     <input type="hidden" asp-for="TripId" />
                     <input type="hidden" asp-for="UserId" />
+
                     <div class="mb-3">
-                        <label asp-for="TicketClass" class="form-label fw-bold">Ticket Class</label>
-                        <select asp-for="TicketClass" class="form-select">
-                            @foreach (var pricing in trip.Pricings)
+                        <label asp-for="TicketClass" class="form-label">Ticket Class</label>
+                        <select asp-for="TicketClass" class="form-select" id="ticketClass" required>
+                            <option value="">Select Ticket Class</option>
+                            @foreach (var pricing in trip?.Pricings ?? new List<TrainBookingAppMVC.DTOs.ResponseModel.TripPricingDto>())
                             {
-                                <option value="@pricing.TicketClass">@pricing.TicketClass (₦@pricing.Price per seat, @pricing.AvailableSeats available)</option>
+                                <option value="@pricing.TicketClass" data-price="@pricing.Price" data-available="@pricing.AvailableSeats">@pricing.TicketClass</option>
                             }
                         </select>
                         <span asp-validation-for="TicketClass" class="text-danger"></span>
                     </div>
+
                     <div class="mb-3">
-                        <label asp-for="NumberOfSeats" class="form-label fw-bold">Number of Seats</label>
-                        <input asp-for="NumberOfSeats" class="form-control" type="number" min="1" />
+                        <label asp-for="NumberOfSeats" class="form-label">Number of Seats</label>
+                        <input asp-for="NumberOfSeats" class="form-control" type="number" min="1" readonly />
                         <span asp-validation-for="NumberOfSeats" class="text-danger"></span>
                     </div>
+
+                    <div class="mb-3" id="seatSelection" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <label class="form-label fw-bold">Select Seats</label>
+                            <div class="seat-legend">
+                                <span class="legend-item">
+                                    <span class="legend-color available"></span>
+                                    Available
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color booked"></span>
+                                    Booked
+                                </span>
+                                <span class="legend-item">
+                                    <span class="legend-color selected"></span>
+                                    Selected
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="seat-layout-container">
+                            <div class="coach-header">
+                                <div class="coach-title">Coach Layout</div>
+                                <div class="direction-indicator">← Front of Train</div>
+                            </div>
+
+                            <div id="seatGrid" class="seat-grid">
+                                <!-- Seats will be populated here -->
+                            </div>
+                        </div>
+
+                        <div id="selectedSeatsDisplay" class="mt-3" style="display: none;">
+                            <strong>Selected Seats: </strong>
+                            <span id="selectedSeatsList"></span>
+                        </div>
+
+                        <span asp-validation-for="SeatNumbers" class="text-danger"></span>
+                    </div>
+
                     <div class="mb-3">
-                        <label asp-for="PaymentAmount" class="form-label fw-bold">Payment Amount (₦)</label>
-                        <input asp-for="PaymentAmount" class="form-control" type="number" step="0.01" min="0" />
+                        <label asp-for="PaymentAmount" class="form-label">Total Payment Amount (₦)</label>
+                        <input asp-for="PaymentAmount" class="form-control" type="number" step="0.01" min="0.01" readonly />
                         <span asp-validation-for="PaymentAmount" class="text-danger"></span>
                     </div>
-                    <div class="d-flex gap-3">
-                        <button type="submit" class="btn btn-primary btn-lg custom-btn">Confirm Booking</button>
-                        <a href="@Url.Action("ViewTrips", "User", new { id = trip.TrainId })" class="btn btn-outline-secondary btn-lg custom-btn">Cancel</a>
+
+                    <div class="d-flex gap-3 mt-4">
+                        <a href="@Url.Action("ViewTrips", "User")" class="btn btn-outline-secondary btn-lg custom-btn">Back</a>
+                        <button type="submit" class="btn btn-primary btn-lg custom-btn" id="bookNowButton">Make Payment</button>
                     </div>
                 </form>
             </div>
@@ -84,7 +167,7 @@
         .large-card {
             border-radius: 12px;
             transition: all 0.3s ease;
-            min-height: 300px;
+            min-height: 400px;
         }
 
             .large-card:hover {
@@ -100,16 +183,6 @@
         .text-secondary {
             color: #6c757d !important;
             font-weight: bold;
-        }
-
-        .form-label {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .form-control, .form-select {
-            font-size: 1rem;
-            padding: 0.75rem;
         }
 
         .fs-2 {
@@ -130,18 +203,431 @@
         .alert {
             font-weight: 500;
         }
+
+        .table-bordered th, .table-bordered td {
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+        }
+
+        .table-light {
+            background-color: #f8f9fa;
+        }
+
+        /* Seat Layout Styles */
+        .seat-layout-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            margin: 20px 0;
+        }
+
+        .coach-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .coach-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .direction-indicator {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .seat-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .seat {
+            width: 30px;
+            height: 25px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+            .seat:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+
+            .seat.available {
+                background: linear-gradient(145deg, #d4edda, #c3e6cb);
+                border-color: #28a745;
+                color: #155724;
+            }
+
+                .seat.available:hover {
+                    background: linear-gradient(145deg, #b8dabd, #a8d4a8);
+                    border-color: #1e7e34;
+                }
+
+            .seat.booked {
+                background: linear-gradient(145deg, #f8d7da, #f1b0b7);
+                border-color: #dc3545;
+                color: #721c24;
+                cursor: not-allowed;
+            }
+
+            .seat.selected {
+                background: linear-gradient(145deg, #b3d4fc, #9fcdfc);
+                border-color: #007bff;
+                color: #004085;
+                animation: pulse 1.5s infinite;
+            }
+
+            .seat.window {
+                position: relative;
+            }
+
+                .seat.window::before {
+                    content: "🪟";
+                    position: absolute;
+                    top: -8px;
+                    right: -8px;
+                    font-size: 0.7rem;
+                }
+
+            .seat.aisle {
+                margin-right: 20px;
+            }
+
+        .seat-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .seat-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .aisle-gap {
+            width: 30px;
+        }
+
+        .seat-legend {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #ddd;
+        }
+
+            .legend-color.available {
+                background: linear-gradient(145deg, #d4edda, #c3e6cb);
+                border-color: #28a745;
+            }
+
+            .legend-color.booked {
+                background: linear-gradient(145deg, #f8d7da, #f1b0b7);
+                border-color: #dc3545;
+            }
+
+            .legend-color.selected {
+                background: linear-gradient(145deg, #b3d4fc, #9fcdfc);
+                border-color: #007bff;
+            }
+
+        #selectedSeatsDisplay {
+            background: #e7f3ff;
+            border: 1px solid #b3d4fc;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        #selectedSeatsList {
+            color: #0066cc;
+            font-weight: bold;
+        }
     </style>
 }
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.11/jquery.validate.unobtrusive.min.js"></script>
+    <script asp-validation-script-for="@Model"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const ticketClassSelect = document.getElementById('ticketClass');
+            const seatSelectionDiv = document.getElementById('seatSelection');
+            const seatGrid = document.getElementById('seatGrid');
+            const numberOfSeatsInput = document.getElementById('NumberOfSeats');
+            const paymentAmountInput = document.getElementById('PaymentAmount');
+            const selectedSeatsDisplay = document.getElementById('selectedSeatsDisplay');
+            const selectedSeatsList = document.getElementById('selectedSeatsList');
+            const bookNowButton = document.getElementById('bookNowButton');
+            const bookingForm = document.getElementById('bookingForm');
+
+            let availableSeats = [];
+            let bookedSeats = [];
+            let selectedSeats = [];
+
+            // Generate seat layout based on class
+            function generateSeatLayout(ticketClass, availableSeatsData) {
+                console.log('Generating seat layout for ticket class:', ticketClass, 'with seats:', availableSeatsData);
+                seatGrid.innerHTML = '';
+                selectedSeats = [];
+
+                // Determine seat configuration based on class
+                let seatConfig = getSeatConfiguration(ticketClass);
+
+                // Get all possible seat numbers based on available seats
+                let allPossibleSeats = [];
+                availableSeatsData.forEach(seatNumber => {
+                    allPossibleSeats.push(seatNumber);
+                });
+
+                // Also need to account for booked seats - extract seat numbers from the pattern
+                let maxSeatNumber = 0;
+                availableSeatsData.forEach(seatNumber => {
+                    let number = parseInt(seatNumber.substring(1));
+                    if (number > maxSeatNumber) {
+                        maxSeatNumber = number;
+                    }
+                });
+
+                // Generate all seats up to the maximum seat number
+                let totalSeats = maxSeatNumber;
+                let seatsPerRow = seatConfig.seatsPerRow;
+                let rows = Math.ceil(totalSeats / seatsPerRow);
+
+                // Create seat elements row by row
+                for (let row = 1; row <= rows; row++) {
+                    let seatRow = document.createElement('div');
+                    seatRow.className = 'seat-row';
+
+                    // First group of seats (left side)
+                    let leftGroup = document.createElement('div');
+                    leftGroup.className = 'seat-group';
+
+                    // Second group of seats (right side)
+                    let rightGroup = document.createElement('div');
+                    rightGroup.className = 'seat-group';
+
+                    for (let seatInRow = 1; seatInRow <= seatsPerRow; seatInRow++) {
+                        let seatNumber = ticketClass[0] + ((row - 1) * seatsPerRow + seatInRow);
+
+                        // Only create seat if it's within our total seat count
+                        if (((row - 1) * seatsPerRow + seatInRow) <= totalSeats) {
+                            let seatElement = document.createElement('div');
+                            seatElement.className = 'seat';
+                            seatElement.textContent = seatNumber;
+                            seatElement.dataset.seatNumber = seatNumber;
+
+                            // Check if seat is available or booked
+                            if (availableSeatsData.includes(seatNumber)) {
+                                seatElement.classList.add('available');
+                                seatElement.addEventListener('click', function() {
+                                    toggleSeatSelection(this);
+                                });
+                            } else {
+                                seatElement.classList.add('booked');
+                            }
+
+                            // Add window seats indicator
+                            if (seatInRow === 1 || seatInRow === seatsPerRow) {
+                                seatElement.classList.add('window');
+                            }
+
+                            // Add to appropriate group
+                            if (seatInRow <= seatsPerRow / 2) {
+                                leftGroup.appendChild(seatElement);
+                            } else {
+                                rightGroup.appendChild(seatElement);
+                            }
+                        }
+                    }
+
+                    // Only add the row if it has seats
+                    if (leftGroup.children.length > 0 || rightGroup.children.length > 0) {
+                        seatRow.appendChild(leftGroup);
+
+                        // Add aisle gap
+                        let aisleGap = document.createElement('div');
+                        aisleGap.className = 'aisle-gap';
+                        seatRow.appendChild(aisleGap);
+
+                        seatRow.appendChild(rightGroup);
+                        seatGrid.appendChild(seatRow);
+                    }
+                }
+            }
+
+            function getSeatConfiguration(ticketClass) {
+                // Configuration based on typical train layouts
+                switch (ticketClass.toLowerCase()) {
+                    case 'firstclass':
+                        return { rows: 8, seatsPerRow: 4 }; // 2+2 configuration
+                    case 'business':
+                        return { rows: 10, seatsPerRow: 4 }; // 2+2 configuration
+                    case 'economy':
+                        return { rows: 15, seatsPerRow: 4 }; // 2+2 configuration
+                    default:
+                        return { rows: 12, seatsPerRow: 4 };
+                }
+            }
+
+            function toggleSeatSelection(seatElement) {
+                const seatNumber = seatElement.dataset.seatNumber;
+                const selectedOption = ticketClassSelect.options[ticketClassSelect.selectedIndex];
+                const availableSeats = selectedOption ? parseInt(selectedOption.getAttribute('data-available')) || 0 : 0;
+
+                console.log('Toggling seat:', seatNumber, 'Selected seats:', selectedSeats, 'Available seats:', availableSeats);
+
+                if (seatElement.classList.contains('selected')) {
+                    // Deselect seat
+                    seatElement.classList.remove('selected');
+                    seatElement.classList.add('available');
+                    selectedSeats = selectedSeats.filter(seat => seat !== seatNumber);
+                } else {
+                    // Select seat
+                    if (selectedSeats.length >= availableSeats) {
+                        alert('Cannot select more seats than available.');
+                        return;
+                    }
+
+                    seatElement.classList.remove('available');
+                    seatElement.classList.add('selected');
+                    selectedSeats.push(seatNumber);
+                }
+
+                updateBookingDetails();
+            }
+
+            function updateBookingDetails() {
+                const selectedOption = ticketClassSelect.options[ticketClassSelect.selectedIndex];
+                const pricePerSeat = selectedOption ? parseFloat(selectedOption.getAttribute('data-price')) || 0 : 0;
+
+                numberOfSeatsInput.value = selectedSeats.length;
+                paymentAmountInput.value = (selectedSeats.length * pricePerSeat).toFixed(2);
+
+                console.log('Updating booking details: Seats:', selectedSeats, 'Number of seats:', selectedSeats.length, 'Payment amount:', paymentAmountInput.value);
+
+                // Update selected seats display
+                if (selectedSeats.length > 0) {
+                    selectedSeatsDisplay.style.display = 'block';
+                    selectedSeatsList.textContent = selectedSeats.join(', ');
+                } else {
+                    selectedSeatsDisplay.style.display = 'none';
+                }
+
+                // Update hidden form field for seat numbers
+                updateSeatNumbersInput();
+            }
+
+            function updateSeatNumbersInput() {
+                // Remove existing hidden inputs
+                const existingInputs = document.querySelectorAll('input[name="SeatNumbers"]');
+                existingInputs.forEach(input => input.remove());
+
+                // Add new hidden inputs for each selected seat
+                selectedSeats.forEach(seatNumber => {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'SeatNumbers';
+                    hiddenInput.value = seatNumber;
+                    document.getElementById('bookingForm').appendChild(hiddenInput);
+                });
+
+                console.log('Updated SeatNumbers inputs:', selectedSeats);
+            }
+
+            ticketClassSelect.addEventListener('change', function () {
+                const ticketClass = this.value;
+                const selectedOption = this.options[this.selectedIndex];
+                const pricePerSeat = selectedOption ? parseFloat(selectedOption.getAttribute('data-price')) || 0 : 0;
+                const availableSeats = selectedOption ? parseInt(selectedOption.getAttribute('data-available')) || 0 : 0;
+
+                console.log('Ticket class changed to:', ticketClass, 'Price per seat:', pricePerSeat, 'Available seats:', availableSeats);
+
+                if (ticketClass) {
+                    fetch(`/User/GetAvailableSeats?tripId=@Model.TripId&ticketClass=${ticketClass}`)
+                        .then(response => {
+                            console.log('Fetch response status:', response.status);
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Fetch data:', data);
+                            if (data.success && data.data.length > 0) {
+                                seatSelectionDiv.style.display = 'block';
+                                generateSeatLayout(ticketClass, data.data);
+                            } else {
+                                seatSelectionDiv.style.display = 'none';
+                                seatGrid.innerHTML = '<p class="text-danger">No seats available for this class.</p>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching seats:', error);
+                            seatSelectionDiv.style.display = 'none';
+                            seatGrid.innerHTML = '<p class="text-danger">Error loading seats: ' + error.message + '</p>';
+                        });
+                } else {
+                    seatSelectionDiv.style.display = 'none';
+                    seatGrid.innerHTML = '';
+                    numberOfSeatsInput.value = '';
+                    paymentAmountInput.value = '';
+                    selectedSeatsDisplay.style.display = 'none';
+                    console.log('No ticket class selected, resetting form');
+                }
+            });
+
+            // Prevent form submission if no seats are selected
+            bookingForm.addEventListener('submit', function (event) {
+                console.log('Form submission triggered. Selected seats:', selectedSeats);
+                if (selectedSeats.length === 0) {
+                    event.preventDefault();
+                    alert('Please select at least one seat before booking.');
+                }
+            });
+
             const buttons = document.querySelectorAll('.custom-btn');
             buttons.forEach(btn => {
                 btn.addEventListener('click', () => {
+                    console.log('Button clicked:', btn.textContent);
                     btn.style.opacity = '0.8';
                     setTimeout(() => btn.style.opacity = '1', 200);
                 });

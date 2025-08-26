@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TrainBookinAppMVC.Models;
 using TrainBookinAppWeb.Data;
+using TrainBookingAppMVC.Models;
 using TrainBookingAppMVC.Models.Enum;
 using TrainBookingAppMVC.Repository.Interfaces;
 
@@ -83,7 +84,7 @@ namespace TrainBookingAppMVC.Repository.Implementations
                 .SumAsync(b => b.NumberOfSeats);
         }
 
-        public async Task<bool> UpdateTripAvailableSeatsAsync(Guid tripId, int seatChange)
+        public async Task<bool> UpdateTripAvailableSeatsAsync(Guid tripId, int seatChange, string ticketClass = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -95,12 +96,17 @@ namespace TrainBookingAppMVC.Repository.Implementations
 
                 if (trip == null) return false;
 
-                // For now, we'll update the first pricing entry
-                // In a real scenario, you'd need to specify which ticket class
-                var pricing = trip.TripPricings.FirstOrDefault();
+                var pricing = ticketClass != null && Enum.TryParse<TicketClass>(ticketClass, out var ticketClassEnum)
+                    ? trip.TripPricings.FirstOrDefault(p => p.TicketClass == ticketClassEnum)
+                    : trip.TripPricings.FirstOrDefault();
+
                 if (pricing != null)
                 {
-                    pricing.AvailableSeats += seatChange; // Add seats back for cancellation
+                    pricing.AvailableSeats += seatChange;
+                    if (pricing.AvailableSeats < 0)
+                    {
+                        throw new InvalidOperationException($"Cannot reduce available seats below 0 for {pricing.TicketClass}.");
+                    }
                     _context.TripPricings.Update(pricing);
                 }
 
@@ -116,82 +122,136 @@ namespace TrainBookingAppMVC.Repository.Implementations
             }
         }
 
-        public async Task<(bool success, string message)> ProcessBookingTransactionAsync(
-            Guid tripId,
-            Guid userId,
-            int numberOfSeats,
-            decimal totalPrice,
-            string ticketClass)
+        public async Task<(bool success, string message, Guid bookingId)> ProcessBookingTransactionAsync(
+               Guid tripId,
+               Guid userId,
+               int numberOfSeats,
+               decimal totalPrice,
+               string ticketClass,
+               List<string> seatNumbers,
+               string transactionReference = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // Get trip with lock
                 var trip = await _context.Trips
                     .Include(t => t.TripPricings)
                     .Include(t => t.Train)
+                    .Include(t => t.Bookings)
                     .FirstOrDefaultAsync(t => t.Id == tripId);
 
                 if (trip == null)
                 {
-                    return (false, "Trip not found.");
+                    return (false, "Trip not found.", Guid.Empty);
                 }
 
-                // Final check for expiration
                 if (trip.IsExpired || trip.DepartureTime <= DateTime.UtcNow)
                 {
-                    return (false, "Sorry, this trip has expired while processing your booking.");
+                    return (false, "Sorry, this trip has expired while processing your booking.", Guid.Empty);
                 }
 
-                // Parse ticket class
                 if (!Enum.TryParse<TicketClass>(ticketClass, out var ticketClassEnum))
                 {
-                    return (false, "Invalid ticket class.");
+                    return (false, "Invalid ticket class.", Guid.Empty);
                 }
 
-                // Get specific pricing
                 var pricing = trip.TripPricings.FirstOrDefault(p => p.TicketClass == ticketClassEnum);
                 if (pricing == null)
                 {
-                    return (false, $"No pricing found for {ticketClass} class.");
+                    return (false, $"No pricing found for {ticketClass} class.", Guid.Empty);
                 }
 
-                // Final seat availability check
-                if (pricing.AvailableSeats < numberOfSeats)
+                if (pricing.AvailableSeats < seatNumbers.Count)
                 {
-                    return (false, $"Sorry, only {pricing.AvailableSeats} seats are now available in {ticketClass} class. Please try again with a lower number.");
+                    return (false, $"Sorry, only {pricing.AvailableSeats} seats are now available in {ticketClass} class. Please try again with a lower number.", Guid.Empty);
                 }
 
-                // Create booking
+                foreach (var seatNumber in seatNumbers)
+                {
+                    if (string.IsNullOrEmpty(seatNumber))
+                    {
+                        return (false, "Seat number cannot be empty.", Guid.Empty);
+                    }
+
+                    var seatTaken = trip.Bookings.Any(b => !b.IsCancelled && b.SeatNumbers.Contains(seatNumber) && b.TicketClass == ticketClassEnum);
+                    if (seatTaken)
+                    {
+                        return (false, $"Sorry, seat {seatNumber} is already taken. Please select another seat.", Guid.Empty);
+                    }
+
+                    var seatRegex = new System.Text.RegularExpressions.Regex($@"^{ticketClass[0]}\d+$");
+                    if (!seatRegex.IsMatch(seatNumber))
+                    {
+                        return (false, $"Invalid seat number: {seatNumber}. Must be in format like '{ticketClass[0]}1'.", Guid.Empty);
+                    }
+                }
+
                 var booking = new Booking
                 {
                     Id = Guid.NewGuid(),
                     TripId = tripId,
                     UserId = userId,
                     TicketClass = ticketClassEnum,
-                    NumberOfSeats = numberOfSeats,
+                    SeatNumbers = seatNumbers,
+                    NumberOfSeats = seatNumbers.Count,
                     TotalPrice = totalPrice,
                     BookingDate = DateTime.UtcNow,
-                    IsCancelled = false
+                    IsCancelled = false,
+                    TransactionReference = transactionReference
                 };
 
                 _context.Bookings.Add(booking);
 
-                // Update available seats
-                pricing.AvailableSeats -= numberOfSeats;
+                pricing.AvailableSeats -= seatNumbers.Count;
+                if (pricing.AvailableSeats < 0)
+                {
+                    throw new InvalidOperationException($"Cannot reduce available seats below 0 for {ticketClass}.");
+                }
                 _context.TripPricings.Update(pricing);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return (true, $"Booking successful! Your booking ID is: {booking.Id}");
+                return (true, $"Booking successful! {seatNumbers.Count} seats booked.", booking.Id);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return (false, $"Booking failed: {ex.Message}");
+                return (false, $"Booking failed: {ex.Message}", Guid.Empty);
             }
+        }
+
+        public async Task<List<string>> GetAvailableSeatsAsync(Guid tripId, TicketClass ticketClass)
+        {
+            var trip = await _context.Trips
+                .Include(t => t.Train)
+                .Include(t => t.TripPricings)
+                .Include(t => t.Bookings)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null) return new List<string>();
+
+            var pricing = trip.TripPricings.FirstOrDefault(p => p.TicketClass == ticketClass);
+            if (pricing == null) return new List<string>();
+
+            var totalSeats = pricing.TotalSeats;
+            var bookedSeats = trip.Bookings
+                .Where(b => !b.IsCancelled && b.TicketClass == ticketClass)
+                .SelectMany(b => b.SeatNumbers)
+                .ToList();
+
+            var availableSeats = new List<string>();
+            for (int i = 1; i <= totalSeats; i++)
+            {
+                var seatNumber = $"{ticketClass.ToString()[0]}{i}";
+                if (!bookedSeats.Contains(seatNumber))
+                {
+                    availableSeats.Add(seatNumber);
+                }
+            }
+
+            return availableSeats;
         }
     }
 }

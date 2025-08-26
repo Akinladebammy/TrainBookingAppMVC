@@ -26,7 +26,6 @@
         </div>
     }
 
-
     <!-- Trains Section -->
     <div class="col-md-12 mb-5">
         <div class="card shadow-lg border-0 large-card">
@@ -42,6 +41,7 @@
                         <table class="table table-hover align-middle table-lg">
                             <thead class="table-dark">
                                 <tr>
+                                    <th>Image</th>
                                     <th>Train Number</th>
                                     <th>Name</th>
                                     <th>Actions</th>
@@ -51,6 +51,16 @@
                                 @foreach (var train in trains)
                                 {
                                     <tr>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(train.ImagePath))
+                                            {
+                                                <img src="@train.ImagePath" alt="@train.Name" class="train-image-small" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No image</span>
+                                            }
+                                        </td>
                                         <td>@train.TrainNumber</td>
                                         <td>@train.Name</td>
                                         <td>
@@ -82,11 +92,8 @@
                 <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Trips</h3>
                 <div class="d-flex justify-content-between mb-4">
                     <a href="@Url.Action("CreateTrip")" class="btn btn-primary btn-lg custom-btn">Create New Trip</a>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="showExpired" checked onchange="filterTrips()" />
-                        <label class="form-check-label fs-5" for="showExpired">Show Expired Trips</label>
-                    </div>
                 </div>
+               
                 @if (trips.Any())
                 {
                     <div class="table-responsive">
@@ -114,7 +121,10 @@
                                         <td>@(trip.IsExpired ? "Expired" : "Active")</td>
                                         <td>
                                             <a href="@Url.Action("TripDetails", new { id = trip.Id })" class="btn btn-info btn-sm custom-btn me-2">View Details</a>
-                                            <a href="@Url.Action("EditTrip", new { id = trip.Id })" class="btn btn-primary btn-sm custom-btn me-2">Edit</a>
+                                            @if (!trip.IsExpired)
+                                            {
+                                                <a href="@Url.Action("EditTrip", new { id = trip.Id })" class="btn btn-primary btn-sm custom-btn me-2">Edit</a>
+                                            }
                                             <form asp-action="DeleteTrip" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this trip?');">
                                                 <input type="hidden" name="id" value="@trip.Id" />
                                                 <button type="submit" class="btn btn-danger btn-sm custom-btn">Delete</button>
@@ -134,17 +144,17 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- User Viewing Section -->
-<div class="col-md-12 mb-5">
-    <div class="card shadow-lg border-0 large-card">
-        <div class="card-body p-4">
-            <h3 class="card-title text-secondary mb-4 fw-bold fs-2">View Users</h3>
-            <div class="d-flex gap-3 mb-4">
-                <a href="@Url.Action("Users")" class="btn btn-primary btn-lg custom-btn">View All Users</a>
+    <!-- User Viewing Section -->
+    <div class="col-md-12 mb-5">
+        <div class="card shadow-lg border-0 large-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">View Users</h3>
+                <div class="d-flex gap-3 mb-4">
+                    <a href="@Url.Action("Users")" class="btn btn-primary btn-lg custom-btn">View All Users</a>
+                </div>
+                <p class="text-muted fs-5">Access all users and their bookings.</p>
             </div>
-            <p class="text-muted fs-5">Access all users and their bookings.</p>
         </div>
     </div>
 </div>
@@ -206,18 +216,13 @@
             font-size: 1.1rem;
             padding: 0.75rem 1.5rem;
         }
+
+        .train-image-small {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
     </style>
 }
 
-@section Scripts {
-    <script>
-        function filterTrips() {
-            const showExpired = document.getElementById('showExpired').checked;
-            const rows = document.querySelectorAll('#tripsTable tbody tr');
-            rows.forEach(row => {
-                row.style.display = showExpired || !row.classList.contains('expired-trip') ? '' : 'none';
-            });
-        }
-        document.addEventListener('DOMContentLoaded', filterTrips);
-    </script>
-}

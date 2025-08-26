@@ -1,11 +1,12 @@
 ﻿@model TrainBookingAppMVC.DTOs.ResponseModel.BookingResponseModel
 @{
-    ViewData["Title"] = "Booking Details";
+    ViewData["Title"] = "Payment Confirmation";
+    var trip = ViewBag.Trip as TrainBookingAppMVC.DTOs.ResponseModel.TripDto;
     var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
 }
 
 <div class="container mt-5">
-    <h1 class="mb-5 text-primary fw-bold display-4">Booking Details</h1>
+    <h1 class="mb-5 text-primary fw-bold display-4">Payment Confirmation</h1>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -25,29 +26,36 @@
     <div class="col-md-8 offset-md-2">
         <div class="card shadow-lg border-0 large-card">
             <div class="card-body p-4">
-                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Booking Information</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Train:</strong> @Model.TrainName (@Model.TrainNumber)</p>
-                        <p><strong>Route:</strong> @Model.Source to @Model.Destination</p>
-                        <p><strong>Departure:</strong> @TimeZoneInfo.ConvertTimeFromUtc(Model.DepartureTime, timeZone).ToString("g")</p>
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Booking Confirmed</h3>
+
+                @if (Model != null && trip != null)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Ticket Class:</strong> @Model.TicketClass</p>
+                            <p><strong>Number of Seats:</strong> @Model.NumberOfSeats</p>
+                            <p><strong>Seats:</strong> @string.Join(", ", Model.SeatNumbers)</p>
+                            <p><strong>Total Amount Paid:</strong> ₦@Model.TotalPrice.ToString("F2")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Train:</strong> @trip.TrainName (@trip.TrainNumber)</p>
+                            <p><strong>Route:</strong> @trip.Source to @trip.Destination</p>
+                            <p><strong>Departure:</strong> @TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("g")</p>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <p><strong>Ticket Class:</strong> @Model.TicketClass</p>
-                        <p><strong>Seats:</strong> @string.Join(", ", Model.SeatNumbers)</p>
-                        <p><strong>Total Price (₦):</strong> @Model.TotalPrice.ToString("F2")</p>
-                        <p><strong>Status:</strong> @Model.TripStatus</p>
+                    <div class="mt-4">
+                        <p class="text-success fw-bold">Your payment was successful, and your booking is confirmed!</p>
+                        
                     </div>
-                </div>
+                }
+                else
+                {
+                    <p class="text-danger">Unable to display booking details. Please contact support with your transaction reference.</p>
+                }
+
                 <div class="d-flex gap-3 mt-4">
-                    <a asp-action="ViewBookings" class="btn btn-outline-secondary btn-lg custom-btn">Back to Bookings</a>
-                    @if (!Model.IsCancelled && !Model.IsExpired && Model.DepartureTime > DateTime.UtcNow)
-                    {
-                        <form asp-action="CancelBooking" asp-route-id="@Model.Id" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-danger btn-lg custom-btn" onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel Booking</button>
-                        </form>
-                    }
+                    <a href="@Url.Action("Index", "User")" class="btn btn-primary btn-lg custom-btn">Go to Dashboard</a>
+                    <a href="@Url.Action("ViewBookings", "User")" class="btn btn-outline-secondary btn-lg custom-btn">View My Bookings</a>
                 </div>
             </div>
         </div>
@@ -70,7 +78,7 @@
         .large-card {
             border-radius: 12px;
             transition: all 0.3s ease;
-            min-height: 400px;
+            min-height: 300px;
         }
 
             .large-card:hover {
@@ -116,6 +124,7 @@
             const buttons = document.querySelectorAll('.custom-btn');
             buttons.forEach(btn => {
                 btn.addEventListener('click', () => {
+                    console.log('Button clicked:', btn.textContent);
                     btn.style.opacity = '0.8';
                     setTimeout(() => btn.style.opacity = '1', 200);
                 });

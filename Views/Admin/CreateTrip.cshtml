@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = "Create Trip";
     var trains = ViewBag.Trains as List<TrainBookingAppMVC.DTOs.ResponseModel.TrainResponseModel> ?? new List<TrainBookingAppMVC.DTOs.ResponseModel.TrainResponseModel>();
+    var terminals = ViewBag.Terminals as List<string> ?? Enum.GetNames(typeof(Terminal)).ToList();
     var ticketClasses = Enum.GetValues(typeof(TicketClass)).Cast<TicketClass>().Select(v => v.ToString()).ToArray();
 }
 
@@ -43,15 +44,27 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Source" class="form-label fs-5">Source</label>
-                    <input asp-for="Source" class="form-control" />
-                    <span asp-validation-for="Source" class="text-danger"></span>
+                    <label asp-for="Source" class="form-label fs-5">Source Terminal</label>
+                    <select asp-for="Source" class="form-control" id="Source">
+                        <option value="">Select source terminal</option>
+                        @foreach (var terminal in terminals)
+                        {
+                            <option value="@terminal">@terminal</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Source" class="text-danger" id="SourceValidation"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Destination" class="form-label fs-5">Destination</label>
-                    <input asp-for="Destination" class="form-control" />
-                    <span asp-validation-for="Destination" class="text-danger"></span>
+                    <label asp-for="Destination" class="form-label fs-5">Destination Terminal</label>
+                    <select asp-for="Destination" class="form-control" id="Destination">
+                        <option value="">Select destination terminal</option>
+                        @foreach (var terminal in terminals)
+                        {
+                            <option value="@terminal">@terminal</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Destination" class="text-danger" id="DestinationValidation"></span>
                 </div>
 
                 <div class="mb-3">
@@ -196,7 +209,53 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', updateTicketClassOptions);
+        // Handle Source and Destination dropdowns
+        document.getElementById('Source').addEventListener('change', function () {
+            const source = this.value;
+            const destinationSelect = document.getElementById('Destination');
+            const destinationOptions = destinationSelect.querySelectorAll('option');
+
+            destinationOptions.forEach(option => {
+                if (option.value === source && option.value !== '') {
+                    option.disabled = true;
+                } else {
+                    option.disabled = false;
+                }
+            });
+
+            // Reset destination if it matches source
+            if (destinationSelect.value === source) {
+                destinationSelect.value = '';
+                document.getElementById('DestinationValidation').textContent = 'Destination cannot be the same as source.';
+            } else {
+                document.getElementById('DestinationValidation').textContent = '';
+            }
+        });
+
+        document.getElementById('Destination').addEventListener('change', function () {
+            const destination = this.value;
+            const sourceSelect = document.getElementById('Source');
+            const sourceValue = sourceSelect.value;
+
+            if (destination === sourceValue && destination !== '') {
+                document.getElementById('DestinationValidation').textContent = 'Destination cannot be the same as source.';
+                this.value = '';
+            } else {
+                document.getElementById('DestinationValidation').textContent = '';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            updateTicketClassOptions();
+            // Initialize destination dropdown based on current source selection
+            const source = document.getElementById('Source').value;
+            if (source) {
+                const destinationSelect = document.getElementById('Destination');
+                destinationSelect.querySelectorAll('option').forEach(option => {
+                    option.disabled = option.value === source && option.value !== '';
+                });
+            }
+        });
 
         document.addEventListener('change', function (e) {
             if (e.target.classList.contains('ticket-class-select')) {

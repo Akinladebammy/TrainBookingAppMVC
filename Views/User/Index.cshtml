@@ -40,6 +40,7 @@
                         <table class="table table-hover align-middle table-lg">
                             <thead class="table-dark">
                                 <tr>
+                                    <th>Image</th>
                                     <th>Train Number</th>
                                     <th>Name</th>
                                     <th>Actions</th>
@@ -49,6 +50,16 @@
                                 @foreach (var train in trains)
                                 {
                                     <tr>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(train.ImagePath))
+                                            {
+                                                <img src="@train.ImagePath" alt="@train.Name" class="train-image-small" style="max-width: 100px; max-height: 100px; object-fit: cover;" />
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No image</span>
+                                            }
+                                        </td>
                                         <td>@train.TrainNumber</td>
                                         <td>@train.Name</td>
                                         <td>
@@ -205,9 +216,8 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Ensure buttons have consistent styling
             const buttons = document.querySelectorAll('.custom-btn');
-            buttons.forForEach(btn => {
+            buttons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     btn.style.opacity = '0.8';
                     setTimeout(() => btn.style.opacity = '1', 200);

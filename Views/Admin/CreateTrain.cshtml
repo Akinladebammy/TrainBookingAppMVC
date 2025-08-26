@@ -1,74 +1,129 @@
 ﻿@model TrainBookingAppMVC.DTOs.RequestModel.CreateTrainRequestModel
-@{    ViewData["Title"] = "Create Train";}
-
-    Create New Train
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+@{
+    ViewData["Title"] = "Create Train";
 }
 
-<div class="card">
-    <div class="card-body">
-        <form asp-action="CreateTrain" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="container mt-5">
+    <h1 class="mb-5 text-primary fw-bold display-4">Create New Train</h1>
 
-            <div class="mb-3">
-                <label asp-for="TrainNumber" class="form-label">Train Number</label>
-                <input asp-for="TrainNumber" class="form-control" maxlength="20" />
-                <span asp-validation-for="TrainNumber" class="text-danger"></span>
-            </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-            <div class="mb-3">
-                <label asp-for="Name" class="form-label">Train Name</label>
-                <input asp-for="Name" class="form-control" maxlength="100" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
+    <div class="card shadow-lg border-0 large-card">
+        <div class="card-body p-4">
+            <form asp-action="CreateTrain" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger fs-5"></div>
 
-            <div class="mb-3">
-                <label asp-for="EconomicCapacity" class="form-label">Economy Capacity</label>
-                <input asp-for="EconomicCapacity" class="form-control" type="number" min="1" max="1000" />
-                <span asp-validation-for="EconomicCapacity" class="text-danger"></span>
-            </div>
+                <div class="mb-3">
+                    <label asp-for="TrainNumber" class="form-label fs-5">Train Number</label>
+                    <input asp-for="TrainNumber" class="form-control" maxlength="20" />
+                    <span asp-validation-for="TrainNumber" class="text-danger"></span>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="BusinessCapacity" class="form-label">Business Capacity</label>
-                <input asp-for="BusinessCapacity" class="form-control" type="number" min="1" max="1000" />
-                <span asp-validation-for="BusinessCapacity" class="text-danger"></span>
-            </div>
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fs-5">Train Name</label>
+                    <input asp-for="Name" class="form-control" maxlength="100" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="FirstClassCapacity" class="form-label">First Class Capacity</label>
-                <input asp-for="FirstClassCapacity" class="form-control" type="number" min="1" max="1000" />
-                <span asp-validation-for="FirstClassCapacity" class="text-danger"></span>
-            </div>
+                <div class="mb-3">
+                    <label asp-for="EconomicCapacity" class="form-label fs-5">Economy Capacity</label>
+                    <input asp-for="EconomicCapacity" class="form-control" type="number" min="1" max="1000" />
+                    <span asp-validation-for="EconomicCapacity" class="text-danger"></span>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="Description" class="form-label">Description</label>
-                <textarea asp-for="Description" class="form-control" rows="4" maxlength="500"></textarea>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
+                <div class="mb-3">
+                    <label asp-for="BusinessCapacity" class="form-label fs-5">Business Capacity</label>
+                    <input asp-for="BusinessCapacity" class="form-control" type="number" min="1" max="1000" />
+                    <span asp-validation-for="BusinessCapacity" class="text-danger"></span>
+                </div>
 
-            <div class="mb-3">
-                <button type="submit" class="btn btn-primary">Create Train</button>
-                <a href="@Url.Action("Index")" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
+                <div class="mb-3">
+                    <label asp-for="FirstClassCapacity" class="form-label fs-5">First Class Capacity</label>
+                    <input asp-for="FirstClassCapacity" class="form-control" type="number" min="1" max="1000" />
+                    <span asp-validation-for="FirstClassCapacity" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fs-5">Description</label>
+                    <textarea asp-for="Description" class="form-control" rows="4" maxlength="500"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="ImageFile" class="form-label fs-5">Train Image</label>
+                    <input type="file" name="imageFile" class="form-control" accept=".jpg,.jpeg,.png" />
+                    <small class="form-text text-muted">Upload a JPG, JPEG, or PNG image (max 5MB).</small>
+                    <span class="text-danger">@Html.ValidationMessage("ImageFile")</span>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg custom-btn">Create Train</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg custom-btn">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .custom-btn {
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
 
+            .custom-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+        .large-card {
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 400px;
+        }
+
+            .large-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+        .text-primary {
+            color: #007bff !important;
+        }
+
+        .text-secondary {
+            color: #6c757d !important;
+        }
+
+        .fs-2 {
+            font-size: 2rem !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem !important;
+        }
+
+        .btn-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+        }
+    </style>
+}
 
 @section Scripts {
-<partial name="_ValidationScriptsPartial" />
+    <partial name="_ValidationScriptsPartial" />
 }

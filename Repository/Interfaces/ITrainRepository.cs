@@ -1,5 +1,4 @@
-﻿using TrainBookinAppMVC.Models;
-using TrainBookingAppMVC.Models;
+﻿using TrainBookingAppMVC.Models;
 
 namespace TrainBookingAppMVC.Repository.Interfaces
 {
@@ -9,8 +8,8 @@ namespace TrainBookingAppMVC.Repository.Interfaces
         Task<Train?> GetByTrainNumberAsync(string trainNumber);
         Task<Train?> GetByNameAsync(string name);
         Task<List<Train>> GetAllAsync();
-        Task<bool> AddAsync(Train train);
-        Task<bool> UpdateAsync(Train train);
+        Task<bool> AddAsync(Train train, IFormFile? imageFile = null);
+        Task<bool> UpdateAsync(Train train, IFormFile? imageFile = null);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<bool> ExistsByTrainNumberAsync(string trainNumber);
@@ -19,7 +18,7 @@ namespace TrainBookingAppMVC.Repository.Interfaces
         Task<bool> HasActiveTripsAsync(Guid trainId);
         Task<int> GetMaxBookedSeatsForActiveTripsByTrainIdAsync(Guid trainId);
         Task<int> GetActiveTripsCountAsync(Guid trainId);
-        Task UpdateAvailableSeatsForActiveTripsAsync(Guid trainId, int newCapacity, int businessCapacity, int firstClassCapacity);
-        Task<Train> GetTrainByIdAsync(Guid trainId);
+        Task UpdateAvailableSeatsForActiveTripsAsync(Guid trainId, int newEconomyCapacity, int newBusinessCapacity, int newFirstClassCapacity);
+        Task<Train?> GetTrainByIdAsync(Guid trainId);
     }
 }

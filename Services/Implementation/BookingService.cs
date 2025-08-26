@@ -2,6 +2,7 @@
 using TrainBookingAppMVC.DTOs.RequestModel;
 using TrainBookingAppMVC.DTOs.ResponseModel;
 using TrainBookingAppMVC.DTOs.Wrapper;
+using TrainBookingAppMVC.Models;
 using TrainBookingAppMVC.Models.Enum;
 using TrainBookingAppMVC.Repository.Interfaces;
 using TrainBookingAppMVC.Services.Interface;
@@ -53,7 +54,6 @@ namespace TrainBookingAppMVC.Services.Implementation
                     return ResponseWrapper<BookingListResponseModel>.ErrorResponse("User ID cannot be empty.");
                 }
 
-                // Verify user exists
                 var user = await _userRepository.GetUserByIdAsync(userId);
                 if (user == null)
                 {
@@ -105,65 +105,100 @@ namespace TrainBookingAppMVC.Services.Implementation
             }
         }
 
+        public async Task<ResponseWrapper<List<string>>> GetAvailableSeatsAsync(Guid tripId, string ticketClass)
+        {
+            try
+            {
+                if (tripId == Guid.Empty)
+                {
+                    return ResponseWrapper<List<string>>.ErrorResponse("Trip ID cannot be empty.");
+                }
+
+                if (!Enum.TryParse<TicketClass>(ticketClass, out var ticketClassEnum))
+                {
+                    return ResponseWrapper<List<string>>.ErrorResponse("Invalid ticket class.");
+                }
+
+                var availableSeats = await _bookingRepository.GetAvailableSeatsAsync(tripId, ticketClassEnum);
+                return ResponseWrapper<List<string>>.SuccessResponse(
+                    availableSeats,
+                    availableSeats.Any() ? "Available seats retrieved successfully." : "No seats available for this trip and class."
+                );
+            }
+            catch (Exception ex)
+            {
+                return ResponseWrapper<List<string>>.ErrorResponse($"Failed to retrieve available seats: {ex.Message}");
+            }
+        }
+
         public async Task<ResponseWrapper<BookingCreationResponseModel>> CreateBookingAsync(CreateBookingRequestModel request)
         {
             try
             {
-                // Validate user exists
                 var user = await _userRepository.GetUserByIdAsync(request.UserId);
                 if (user == null)
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse("User not found.");
                 }
 
-                // Validate trip exists and get trip details
                 var trip = await _tripRepository.GetTripWithDetailsAsync(request.TripId);
                 if (trip == null)
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse("Trip not found.");
                 }
 
-                // Check if trip is expired
                 if (trip.IsExpired || trip.DepartureTime <= DateTime.UtcNow)
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse("Sorry, this trip has expired and is no longer available for booking.");
                 }
 
-                // Validate ticket class
                 if (!Enum.TryParse<TicketClass>(request.TicketClass, out var ticketClass))
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse("Invalid ticket class.");
                 }
 
-                // Get pricing for the specific ticket class
                 var pricing = trip.TripPricings.FirstOrDefault(p => p.TicketClass == ticketClass);
                 if (pricing == null)
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse($"No pricing found for {request.TicketClass} class on this trip.");
                 }
 
-                // Check seat availability
-                if (pricing.AvailableSeats < request.NumberOfSeats)
+                if (!request.SeatNumbers.Any())
+                {
+                    return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse("At least one seat must be selected.");
+                }
+
+                if (pricing.AvailableSeats < request.SeatNumbers.Count)
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse($"Not enough seats available. Only {pricing.AvailableSeats} seats left in {request.TicketClass} class.");
                 }
 
-                // Calculate total price
-                decimal totalPrice = pricing.Price * request.NumberOfSeats;
+                var seatNumberRegex = new System.Text.RegularExpressions.Regex($@"^{request.TicketClass[0]}\d+$");
+                foreach (var seatNumber in request.SeatNumbers)
+                {
+                    if (string.IsNullOrEmpty(seatNumber) || seatNumber.Length > 10 || !seatNumberRegex.IsMatch(seatNumber))
+                    {
+                        return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse($"Invalid seat number: {seatNumber}. Must be in format like '{request.TicketClass[0]}1' and up to 10 characters.");
+                    }
+                }
 
-                // Validate payment
+                decimal totalPrice = pricing.Price * request.SeatNumbers.Count;
+
                 if (request.PaymentAmount < totalPrice)
                 {
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse($"Insufficient payment. Required: ₦{totalPrice:F2}, Provided: ₦{request.PaymentAmount:F2}");
                 }
 
-                // Process booking transaction
-                var (success, message) = await _bookingRepository.ProcessBookingTransactionAsync(
+                request.NumberOfSeats = request.SeatNumbers.Count;
+
+                (bool success, string message, Guid bookingId) = await _bookingRepository.ProcessBookingTransactionAsync(
                     request.TripId,
                     request.UserId,
                     request.NumberOfSeats,
                     totalPrice,
-                    request.TicketClass
+                    request.TicketClass,
+                    request.SeatNumbers,
+                    request.TransactionReference
                 );
 
                 if (!success)
@@ -171,17 +206,16 @@ namespace TrainBookingAppMVC.Services.Implementation
                     return ResponseWrapper<BookingCreationResponseModel>.ErrorResponse(message);
                 }
 
-                // Calculate change
                 decimal change = request.PaymentAmount - totalPrice;
 
                 var response = new BookingCreationResponseModel
                 {
-                    BookingId = Guid.NewGuid(), // This should be returned from the transaction
+                    BookingId = bookingId,
                     Message = change > 0 ? $"Booking successful! Change: ₦{change:F2}" : "Booking successful!",
                     Change = change
                 };
 
-                return ResponseWrapper<BookingCreationResponseModel>.SuccessResponse(response, "Booking created successfully.");
+                return ResponseWrapper<BookingCreationResponseModel>.SuccessResponse(response, $"Successfully booked {request.SeatNumbers.Count} seats.");
             }
             catch (Exception ex)
             {
@@ -198,34 +232,30 @@ namespace TrainBookingAppMVC.Services.Implementation
                     return ResponseWrapper<string>.ErrorResponse("Booking ID cannot be empty.");
                 }
 
-                // Get booking with user verification
                 var booking = await _bookingRepository.GetBookingByIdAndUserIdAsync(bookingId, request.UserId);
                 if (booking == null)
                 {
                     return ResponseWrapper<string>.ErrorResponse("Booking not found or you don't have permission to cancel it.");
                 }
 
-                // Check if booking is already cancelled
                 if (booking.IsCancelled)
                 {
                     return ResponseWrapper<string>.ErrorResponse("Booking is already cancelled.");
                 }
 
-                // Check if trip has already departed
                 if (booking.Trip.DepartureTime <= DateTime.UtcNow)
                 {
                     return ResponseWrapper<string>.ErrorResponse("Cannot cancel booking after trip departure time.");
                 }
 
-                // Process cancellation
+                booking.IsCancelled = true;
+                await _bookingRepository.UpdateTripAvailableSeatsAsync(booking.TripId, booking.NumberOfSeats, booking.TicketClass.ToString());
+
                 var success = await _bookingRepository.DeleteBookingAsync(bookingId);
                 if (!success)
                 {
                     return ResponseWrapper<string>.ErrorResponse("Failed to cancel booking.");
                 }
-
-                // Return seats to trip
-                await _bookingRepository.UpdateTripAvailableSeatsAsync(booking.TripId, booking.NumberOfSeats);
 
                 return ResponseWrapper<string>.SuccessResponse($"Booking cancelled successfully. Refund amount: ₦{booking.TotalPrice:F2} will be processed.");
             }
@@ -240,16 +270,7 @@ namespace TrainBookingAppMVC.Services.Implementation
             var departureTime = booking.Trip.DepartureTime;
             var isExpired = booking.Trip.IsExpired;
 
-            // Determine trip status
-            string tripStatus;
-            if (isExpired || departureTime <= DateTime.UtcNow)
-            {
-                tripStatus = "TRIP COMPLETED ✓";
-            }
-            else
-            {
-                tripStatus = "UPCOMING";
-            }
+            string tripStatus = isExpired || departureTime <= DateTime.UtcNow ? "TRIP COMPLETED ✓" : "UPCOMING";
 
             return new BookingResponseModel
             {
@@ -257,14 +278,16 @@ namespace TrainBookingAppMVC.Services.Implementation
                 TripId = booking.TripId,
                 UserId = booking.UserId,
                 TicketClass = booking.TicketClass.ToString(),
+                SeatNumbers = booking.SeatNumbers,
                 NumberOfSeats = booking.NumberOfSeats,
                 TotalPrice = booking.TotalPrice,
                 BookingDate = booking.BookingDate,
                 IsCancelled = booking.IsCancelled,
+                TransactionReference = booking.TransactionReference, // Add transaction reference
                 TrainNumber = booking.Trip.Train?.TrainNumber ?? string.Empty,
                 TrainName = booking.Trip.Train?.Name ?? string.Empty,
-                Source = booking.Trip.Source,
-                Destination = booking.Trip.Destination,
+                Source = booking.Trip.Source.ToString(),
+                Destination = booking.Trip.Destination.ToString(),
                 DepartureTime = booking.Trip.DepartureTime,
                 IsExpired = booking.Trip.IsExpired,
                 TripStatus = tripStatus,
@@ -273,4 +296,6 @@ namespace TrainBookingAppMVC.Services.Implementation
             };
         }
     }
+
+
 }

@@ -55,8 +55,22 @@ namespace TrainBookingAppMVC.Repository.Implementations
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
 
+        public async Task<IEnumerable<Trip>> GetTripsByTrainIdAsync(Guid trainId)
+        {
+            return await _context.Trips
+                .Include(t => t.TripPricings)
+                .Include(t => t.Train)
+                .Where(t => t.TrainId == trainId)
+                .ToListAsync();
+        }
+
         public async Task<Trip> CreateTripAsync(Trip trip)
         {
+            if (trip.Source == trip.Destination)
+            {
+                throw new ArgumentException("Source and destination terminals cannot be the same.");
+            }
+
             _context.Trips.Add(trip);
             await _context.SaveChangesAsync();
             return trip;
@@ -64,6 +78,11 @@ namespace TrainBookingAppMVC.Repository.Implementations
 
         public async Task<Trip> UpdateTripAsync(Trip trip)
         {
+            if (trip.Source == trip.Destination)
+            {
+                throw new ArgumentException("Source and destination terminals cannot be the same.");
+            }
+
             trip.UpdatedAt = DateTime.UtcNow;
             _context.Trips.Update(trip);
             await _context.SaveChangesAsync();

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using TrainBookinAppMVC.Models;
+using TrainBookingAppMVC.Models.Enum;
 
 namespace TrainBookingAppMVC.Models
 {
@@ -7,8 +8,8 @@ namespace TrainBookingAppMVC.Models
     {
         public Guid Id { get; set; }
         public Guid TrainId { get; set; }
-        public string Source { get; set; } = string.Empty;
-        public string Destination { get; set; } = string.Empty;
+        public Terminal Source { get; set; } 
+        public Terminal Destination { get; set; } 
         public DateTime DepartureTime { get; set; }
         public bool IsExpired { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

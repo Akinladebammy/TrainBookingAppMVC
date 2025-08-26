@@ -24,22 +24,43 @@
             <div class="card shadow-lg border-0 large-card">
                 <div class="card-body p-4">
                     <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Train Information</h3>
-                    <dl class="row">
-                        <dt class="col-sm-3 fs-5">Train Number:</dt>
-                        <dd class="col-sm-9 fs-5">@train.TrainNumber</dd>
-                        <dt class="col-sm-3 fs-5">Name:</dt>
-                        <dd class="col-sm-9 fs-5">@train.Name</dd>
-                        <dt class="col-sm-3 fs-5">Description:</dt>
-                        <dd class="col-sm-9 fs-5">@(string.IsNullOrEmpty(train.Description) ? "N/A" : train.Description)</dd>
-                        <dt class="col-sm-3 fs-5">Economy Capacity:</dt>
-                        <dd class="col-sm-9 fs-5">@train.EconomyCapacity</dd>
-                        <dt class="col-sm-3 fs-5">Business Capacity:</dt>
-                        <dd class="col-sm-9 fs-5">@train.BusinessCapacity</dd>
-                        <dt class="col-sm-3 fs-5">First Class Capacity:</dt>
-                        <dd class="col-sm-9 fs-5">@train.FirstClassCapacity</dd>
-                        <dt class="col-sm-3 fs-5">Total Capacity:</dt>
-                        <dd class="col-sm-9 fs-5">@(train.EconomyCapacity + train.BusinessCapacity + train.FirstClassCapacity)</dd>
-                    </dl>
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            @if (!string.IsNullOrEmpty(train.ImagePath))
+                            {
+                                <div class="train-image-container">
+                                    <img src="@train.ImagePath" alt="@train.Name" class="train-image-large" />
+                                    <p class="text-muted fs-5 mt-2">Train Image</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted fs-5">No image available</p>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4 fs-5">Train Number:</dt>
+                                <dd class="col-sm-8 fs-5">@train.TrainNumber</dd>
+                                <dt class="col-sm-4 fs-5">Name:</dt>
+                                <dd class="col-sm-8 fs-5">@train.Name</dd>
+                                <dt class="col-sm-4 fs-5">Description:</dt>
+                                <dd class="col-sm-8 fs-5">@(string.IsNullOrEmpty(train.Description) ? "N/A" : train.Description)</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4 fs-5">Economy Capacity:</dt>
+                                <dd class="col-sm-8 fs-5">@train.EconomyCapacity</dd>
+                                <dt class="col-sm-4 fs-5">Business Capacity:</dt>
+                                <dd class="col-sm-8 fs-5">@train.BusinessCapacity</dd>
+                                <dt class="col-sm-4 fs-5">First Class Capacity:</dt>
+                                <dd class="col-sm-8 fs-5">@train.FirstClassCapacity</dd>
+                                <dt class="col-sm-4 fs-5">Total Capacity:</dt>
+                                <dd class="col-sm-8 fs-5">@(train.EconomyCapacity + train.BusinessCapacity + train.FirstClassCapacity)</dd>
+                            </dl>
+                        </div>
+                    </div>
                     <div class="d-flex gap-3 mt-4">
                         <a href="@Url.Action("EditTrain", new { id = train.Id })" class="btn btn-primary btn-lg custom-btn">Edit Train</a>
                         <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg custom-btn">Back to Dashboard</a>
@@ -118,35 +139,25 @@
             transform: translateY(-5px);
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
-        .table-dark {
-            background-color: #343a40;
+        .table-dark { background-color: #343a40; }
+        .expired-trip { background-color: #f8f9fa; opacity: 0.7; }
+        .text-primary { color: #007bff !important; }
+        .text-secondary { color: #6c757d !important; }
+        .table-lg th, .table-lg td { font-size: 1.1rem; padding: 1rem; }
+        .fs-2 { font-size: 2rem !important; }
+        .fs-5 { font-size: 1.25rem !important; }
+        .btn-lg { font-size: 1.1rem; padding: 0.75rem 1.5rem; }
+        dl dt, dl dd { margin-bottom: 1rem; }
+        .train-image-large {
+            width: 300px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .expired-trip {
-            background-color: #f8f9fa;
-            opacity: 0.7;
-        }
-        .text-primary {
-            color: #007bff !important;
-        }
-        .text-secondary {
-            color: #6c757d !important;
-        }
-        .table-lg th, .table-lg td {
-            font-size: 1.1rem;
-            padding: 1rem;
-        }
-        .fs-2 {
-            font-size: 2rem !important;
-        }
-        .fs-5 {
-            font-size: 1.25rem !important;
-        }
-        .btn-lg {
-            font-size: 1.1rem;
-            padding: 0.75rem 1.5rem;
-        }
-        dl dt, dl dd {
-            margin-bottom: 1rem;
+        .train-image-container {
+            text-align: center;
         }
     </style>
 }

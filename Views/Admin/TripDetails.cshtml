@@ -9,7 +9,7 @@
 }
 
 <div class="container mt-5">
-    <h2 class="mb-4 text-primary fw-bold">Trip Details</h2>
+    <h1 class="mb-5 text-primary fw-bold display-4">Trip Details</h1>
 
     @if (TempData["ErrorMessage"] != null)
     {
@@ -21,30 +21,43 @@
 
     @if (Model != null)
     {
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body">
-                <h3 class="card-title text-secondary mb-4">Trip: @Model.Source to @Model.Destination</h3>
+        <div class="card shadow-lg border-0 large-card mb-4">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Trip: @Model.Source to @Model.Destination</h3>
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Train:</strong> @Model.TrainName (@Model.TrainNumber)</p>
-                        <p><strong>Source:</strong> @Model.Source</p>
-                        <p><strong>Destination:</strong> @Model.Destination</p>
+                        <dl class="row">
+                            <dt class="col-sm-4 fs-5">Train:</dt>
+                            <dd class="col-sm-8 fs-5">@Model.TrainName (@Model.TrainNumber)</dd>
+                            <dt class="col-sm-4 fs-5">Source:</dt>
+                            <dd class="col-sm-8 fs-5">@Model.Source</dd>
+                            <dt class="col-sm-4 fs-5">Destination:</dt>
+                            <dd class="col-sm-8 fs-5">@Model.Destination</dd>
+                        </dl>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Departure Time (WAT):</strong> @TimeZoneInfo.ConvertTimeFromUtc(Model.DepartureTime, timeZone).ToString("g")</p>
-                        <p><strong>Status:</strong> @(Model.IsExpired ? "Expired" : "Active")</p>
+                        <dl class="row">
+                            <dt class="col-sm-4 fs-5">Departure Time (WAT):</dt>
+                            <dd class="col-sm-8 fs-5">@TimeZoneInfo.ConvertTimeFromUtc(Model.DepartureTime, timeZone).ToString("g")</dd>
+                            <dt class="col-sm-4 fs-5">Status:</dt>
+                            <dd class="col-sm-8 fs-5">@(Model.IsExpired ? "Expired" : "Active")</dd>
+                        </dl>
                     </div>
+                </div>
+                <div class="d-flex gap-3 mt-4">
+                    <a href="@Url.Action("EditTrip", new { id = Model.Id })" class="btn btn-primary btn-lg custom-btn me-2">Edit Trip</a>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg custom-btn">Back to Dashboard</a>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h4 class="text-secondary mb-3">Pricing Details</h4>
+        <div class="card shadow-lg border-0 large-card">
+            <div class="card-body p-4">
+                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Pricing Details</h3>
                 @if (Model.Pricings.Any())
                 {
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table class="table table-hover align-middle table-lg">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Ticket Class</th>
@@ -69,19 +82,15 @@
                 }
                 else
                 {
-                    <p class="text-muted">No pricing details available.</p>
+                    <p class="text-muted fs-5">No pricing details available.</p>
                 }
-                <div class="mt-4">
-                    <a href="@Url.Action("EditTrip", new { id = Model.Id })" class="btn btn-primary custom-btn me-2">Edit Trip</a>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary custom-btn">Back to Dashboard</a>
-                </div>
             </div>
         </div>
     }
     else
     {
-        <p class="text-danger">Trip not found.</p>
-        <a href="@Url.Action("Index")" class="btn btn-secondary custom-btn">Back to Dashboard</a>
+        <p class="text-danger fs-5">Trip not found.</p>
+        <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg custom-btn">Back to Dashboard</a>
     }
 </div>
 
@@ -95,22 +104,22 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .card {
-            border-radius: 10px;
+        .large-card {
+            border-radius: 12px;
             transition: all 0.3s ease;
+            min-height: 400px;
         }
-        .card:hover {
+        .large-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
-        .table-dark {
-            background-color: #343a40;
-        }
-        .text-primary {
-            color: #007bff !important;
-        }
-        .text-secondary {
-            color: #6c757d !important;
-        }
+        .table-dark { background-color: #343a40; }
+        .text-primary { color: #007bff !important; }
+        .text-secondary { color: #6c757d !important; }
+        .table-lg th, .table-lg td { font-size: 1.1rem; padding: 1rem; }
+        .fs-2 { font-size: 2rem !important; }
+        .fs-5 { font-size: 1.25rem !important; }
+        .btn-lg { font-size: 1.1rem; padding: 0.75rem 1.5rem; }
+        dl dt, dl dd { margin-bottom: 1rem; }
     </style>
 }

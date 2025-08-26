@@ -26,8 +26,8 @@ namespace TrainBookinAppWeb.Data
             modelBuilder.Entity<Trip>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Source).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Destination).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Source).IsRequired().HasConversion<string>().HasMaxLength(100);
+                entity.Property(e => e.Destination).IsRequired().HasConversion<string>().HasMaxLength(100);
                 entity.Property(e => e.DepartureTime).IsRequired();
                 entity.Property(e => e.CreatedAt).IsRequired();
 
@@ -44,6 +44,7 @@ namespace TrainBookinAppWeb.Data
                 entity.Property(e => e.TrainNumber).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.ImagePath).HasMaxLength(500);
                 entity.Property(e => e.EconomyCapacity).IsRequired();
                 entity.Property(e => e.BusinessCapacity).IsRequired();
                 entity.Property(e => e.FirstClassCapacity).IsRequired();
@@ -56,7 +57,7 @@ namespace TrainBookinAppWeb.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Price).HasColumnType("decimal(18,2)").IsRequired();
-                entity.Property(e => e.TicketClass).IsRequired();
+                entity.Property(e => e.TicketClass).IsRequired().HasConversion<string>();
                 entity.Property(e => e.AvailableSeats).IsRequired();
                 entity.Property(e => e.TotalSeats).IsRequired();
 
@@ -65,7 +66,6 @@ namespace TrainBookinAppWeb.Data
                     .HasForeignKey(e => e.TripId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // Ensure unique ticket class per trip
                 entity.HasIndex(e => new { e.TripId, e.TicketClass }).IsUnique();
             });
 
@@ -76,6 +76,10 @@ namespace TrainBookinAppWeb.Data
                 entity.Property(e => e.TotalPrice).HasColumnType("decimal(18,2)").IsRequired();
                 entity.Property(e => e.NumberOfSeats).IsRequired();
                 entity.Property(e => e.BookingDate).IsRequired();
+                entity.Property(e => e.SeatNumbers).IsRequired().HasMaxLength(255); // Updated to SeatNumbers
+                entity.Property(e => e.TicketClass).IsRequired().HasConversion<string>();
+                entity.Property(e => e.RowVersion).IsRowVersion();
+                entity.Property(e => e.TransactionReference).HasMaxLength(100); // Added for Paystack
 
                 entity.HasOne(e => e.Trip)
                     .WithMany(t => t.Bookings)
@@ -87,7 +91,6 @@ namespace TrainBookinAppWeb.Data
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Explicitly specify column names to avoid EF naming issues
                 entity.Property(e => e.UserId).HasColumnName("UserId");
                 entity.Property(e => e.TripId).HasColumnName("TripId");
             });
@@ -101,7 +104,7 @@ namespace TrainBookinAppWeb.Data
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Password).IsRequired();
                 entity.Property(e => e.Salt).IsRequired();
-                entity.Property(e => e.Role).IsRequired();
+                entity.Property(e => e.Role).IsRequired().HasConversion<string>();
 
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
@@ -114,21 +117,18 @@ namespace TrainBookinAppWeb.Data
         private void SeedAdminUser(ModelBuilder modelBuilder)
         {
             var adminId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-
-            // Generate salt for admin user
             var salt = GenerateSalt();
             var hashedPassword = HashPassword("Admin@123", salt);
 
             var adminUser = new User
             {
                 Id = adminId,
-                FullName = "System Administrator", // Fixed typo
+                FullName = "System Administrator",
                 Username = "admin",
                 Email = "admin@gmail.com",
-                Password = hashedPassword, // Use the proper hashed password
+                Password = hashedPassword,
                 Salt = salt,
                 Role = UserRole.Admin
-                // Remove Bookings initialization - EF will handle navigation properties
             };
 
             modelBuilder.Entity<User>().HasData(adminUser);

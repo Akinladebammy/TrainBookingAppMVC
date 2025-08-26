@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TrainBookingAppMVC.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class Update : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,6 +24,8 @@ namespace TrainBookingAppMVC.Migrations
                     Name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ImagePath = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     EconomyCapacity = table.Column<int>(type: "int", nullable: false),
                     BusinessCapacity = table.Column<int>(type: "int", nullable: false),
@@ -49,7 +51,8 @@ namespace TrainBookingAppMVC.Migrations
                     Password = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Salt = table.Column<byte[]>(type: "longblob", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false)
+                    Role = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -91,11 +94,19 @@ namespace TrainBookingAppMVC.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     TripId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     UserId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    TicketClass = table.Column<int>(type: "int", nullable: false),
+                    TicketClass = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    SeatNumbers = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    SeatNumbers1 = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     NumberOfSeats = table.Column<int>(type: "int", nullable: false),
                     TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     BookingDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    IsCancelled = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                    IsCancelled = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    TransactionReference = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    RowVersion = table.Column<DateTime>(type: "timestamp(6)", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -121,7 +132,8 @@ namespace TrainBookingAppMVC.Migrations
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     TripId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    TicketClass = table.Column<int>(type: "int", nullable: false),
+                    TicketClass = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     AvailableSeats = table.Column<int>(type: "int", nullable: false),
                     TotalSeats = table.Column<int>(type: "int", nullable: false)
@@ -141,7 +153,7 @@ namespace TrainBookingAppMVC.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "Email", "FullName", "Password", "Role", "Salt", "Username" },
-                values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), "admin@gmail.com", "System Administrator", "0E42FDCFF3C87923A4CC8DF157E877EF26A4F32FA237E30A8457F027FEE65E2E", 1, new byte[] { 16, 94, 227, 42, 30, 196, 161, 165, 155, 49, 254, 201, 4, 132, 65, 172 }, "admin" });
+                values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), "admin@gmail.com", "System Administrator", "8C1005A86C85014A16B8177EAE96C0E22D59E3C31D42F3668F55C1B95A17BFD6", "Admin", new byte[] { 47, 49, 234, 150, 232, 142, 147, 17, 37, 213, 13, 69, 255, 117, 120, 75 }, "admin" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bookings_TripId",

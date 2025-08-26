@@ -1,16 +1,13 @@
-﻿@using System.Linq
-@using TrainBookingAppMVC.DTOs.ResponseModel
-@model dynamic
+﻿@model dynamic
 
 @{
-    ViewData["Title"] = $"Train Details - {(Model.Train as TrainResponseModel).Name}";
-    var train = Model.Train as TrainResponseModel;
-    var trips = Model.Trips as List<TripDto> ?? new List<TripDto>();
-    var timeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Central Africa Standard Time"); // WAT (UTC+1)
+    ViewData["Title"] = "Train Details";
+    var train = Model.Train as TrainBookingAppMVC.DTOs.ResponseModel.TrainResponseModel;
+    var trips = Model.Trips as List<TrainBookingAppMVC.DTOs.ResponseModel.TripDto>;
 }
 
 <div class="container mt-5">
-    <h1 class="mb-5 text-primary fw-bold display-4">Train: @train.Name (@train.TrainNumber)</h1>
+    <h1 class="mb-5 text-primary fw-bold display-4">Train Details: @train.Name (@train.TrainNumber)</h1>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -27,32 +24,39 @@
         </div>
     }
 
-    <div class="col-md-12 mb-5">
-        <div class="card shadow-lg border-0 large-card">
-            <div class="card-body p-4">
-                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Train Details</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Train Number:</strong> @train.TrainNumber</p>
-                        <p><strong>Name:</strong> @train.Name</p>
-                        <p><strong>Economy Capacity:</strong> @train.EconomyCapacity</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Business Capacity:</strong> @train.BusinessCapacity</p>
-                        <p><strong>First Class Capacity:</strong> @train.FirstClassCapacity</p>
-                        <p><strong>Description:</strong> @train.Description</p>
-                    </div>
-                </div>
-                <a href="@Url.Action("ViewTrains", "User")" class="btn btn-outline-secondary btn-lg custom-btn mt-3">Back to Trains</a>
-            </div>
-        </div>
-    </div>
+    @if (ViewBag.IsAuthenticated)
+    {
+        <p class="fs-5">Welcome, @ViewBag.FullName!</p>
+    }
 
     <div class="col-md-12 mb-5">
         <div class="card shadow-lg border-0 large-card">
             <div class="card-body p-4">
-                <h3 class="card-title text-secondary mb-4 fw-bold fs-2">Available Trips</h3>
-                @if (trips.Any())
+                @if (train != null)
+                {
+                    <div class="mb-4">
+                        @if (!string.IsNullOrEmpty(train.ImagePath))
+                        {
+                            <img src="@train.ImagePath" alt="@train.Name" class="img-fluid rounded" style="max-height: 300px; object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <span class="text-muted">No image available</span>
+                        }
+                    </div>
+                    <h3 class="card-title text-secondary mb-4 fw-bold fs-2">@train.Name (@train.TrainNumber)</h3>
+                    <p class="text-muted fs-5">@train.Description</p>
+                    <p class="fs-5"><strong>Economy Seats:</strong> @train.EconomyCapacity</p>
+                    <p class="fs-5"><strong>Business Seats:</strong> @train.BusinessCapacity</p>
+                    <p class="fs-5"><strong>First Class Seats:</strong> @train.FirstClassCapacity</p>
+                }
+
+                <div class="d-flex gap-3 mb-4">
+                    <a href="@Url.Action("ViewTrains", "User")" class="btn btn-outline-secondary btn-lg custom-btn">Back to Trains</a>
+                </div>
+
+                <h4 class="text-secondary mb-3 fw-bold fs-3">Available Trips</h4>
+                @if (trips != null && trips.Any())
                 {
                     <div class="table-responsive">
                         <table class="table table-hover align-middle table-lg">
@@ -60,8 +64,9 @@
                                 <tr>
                                     <th>Source</th>
                                     <th>Destination</th>
-                                    <th>Departure (WAT)</th>
+                                    <th>Departure Time</th>
                                     <th>Ticket Classes</th>
+                                    <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -71,10 +76,23 @@
                                     <tr>
                                         <td>@trip.Source</td>
                                         <td>@trip.Destination</td>
-                                        <td>@TimeZoneInfo.ConvertTimeFromUtc(trip.DepartureTime, timeZone).ToString("g")</td>
-                                        <td>@(trip.Pricings.Any() ? string.Join(", ", trip.Pricings.Select(p => p.TicketClass)) : "N/A")</td>
+                                        <td>@trip.DepartureTime.ToString("g")</td>
                                         <td>
-                                            <a href="@Url.Action("BookTrip", "User", new { tripId = trip.Id })" class="btn btn-primary btn-sm custom-btn">Book Now</a>
+                                            @foreach (var pricing in trip.Pricings)
+                                            {
+                                                <div>@pricing.TicketClass: ₦@pricing.Price (Available: @pricing.AvailableSeats)</div>
+                                            }
+                                        </td>
+                                        <td>@(trip.IsExpired || trip.DepartureTime <= DateTime.UtcNow ? "Expired" : "Active")</td>
+                                        <td>
+                                            @if (!trip.IsExpired && trip.DepartureTime > DateTime.UtcNow)
+                                            {
+                                                <a href="@Url.Action("BookTrip", "User", new { tripId = trip.Id })" class="btn btn-primary btn-sm custom-btn">Book Now</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Booking Closed</span>
+                                            }
                                         </td>
                                     </tr>
                                 }
@@ -100,10 +118,10 @@
             font-weight: bold;
         }
 
-            .custom-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            }
+        .custom-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
 
         .large-card {
             border-radius: 12px;
@@ -111,10 +129,10 @@
             min-height: 300px;
         }
 
-            .large-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            }
+        .large-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
 
         .table-dark {
             background-color: #343a40;
@@ -130,49 +148,5 @@
             color: #6c757d !important;
             font-weight: bold;
         }
-
-        .table-lg th, .table-lg td {
-            font-size: 1.1rem;
-            padding: 1rem;
-            font-weight: 500;
-        }
-
-        .fs-2 {
-            font-size: 2rem !important;
-            font-weight: bold !important;
-        }
-
-        .fs-5 {
-            font-size: 1.25rem !important;
-            font-weight: 500;
-        }
-
-        .btn-lg {
-            font-size: 1.1rem;
-            padding: 0.75rem 1.5rem;
-            font-weight: bold;
-        }
-
-        .display-4 {
-            font-weight: 700 !important;
-        }
-
-        .alert {
-            font-weight: 500;
-        }
     </style>
-}
-
-@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const buttons = document.querySelectorAll('.custom-btn');
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    btn.style.opacity = '0.8';
-                    setTimeout(() => btn.style.opacity = '1', 200);
-                });
-            });
-        });
-    </script>
 }

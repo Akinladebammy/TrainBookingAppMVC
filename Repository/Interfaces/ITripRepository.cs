@@ -9,6 +9,7 @@ namespace TrainBookingAppMVC.Repository.Interfaces
         Task<IEnumerable<Trip>> GetAvailableTripsAsync();
         Task<Trip?> GetTripByIdAsync(Guid id);
         Task<Trip?> GetTripWithDetailsAsync(Guid id);
+        Task<IEnumerable<Trip>> GetTripsByTrainIdAsync(Guid trainId);
         Task<Trip> CreateTripAsync(Trip trip);
         Task<Trip> UpdateTripAsync(Trip trip);
         Task<bool> DeleteTripAsync(Guid id);

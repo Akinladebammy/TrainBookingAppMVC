@@ -310,10 +310,40 @@
 
 @section Scripts {
     <script>
-        // Add some interactive feedback
         document.addEventListener('DOMContentLoaded', function() {
             const inputs = document.querySelectorAll('.form-control');
+            const passwordInput = document.getElementById('Password');
+            const confirmPasswordInput = document.getElementById('ConfirmPassword');
+            const confirmPasswordFeedback = document.getElementById('confirmPasswordFeedback');
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('registerForm');
 
+            // Real-time password matching validation
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+
+                if (password && confirmPassword) {
+                    if (password !== confirmPassword) {
+                        confirmPasswordFeedback.textContent = "Passwords do not match";
+                        confirmPasswordFeedback.style.color = '#ff6b6b';
+                        submitBtn.disabled = true;
+                    } else {
+                        confirmPasswordFeedback.textContent = "Passwords match";
+                        confirmPasswordFeedback.style.color = '#4CAF50';
+                        submitBtn.disabled = false;
+                    }
+                } else {
+                    confirmPasswordFeedback.textContent = "";
+                    submitBtn.disabled = false;
+                }
+            }
+
+            // Add input event listeners for password matching
+            passwordInput.addEventListener('input', validatePasswords);
+            confirmPasswordInput.addEventListener('input', validatePasswords);
+
+            // Input focus/blur animations
             inputs.forEach(input => {
                 input.addEventListener('focus', function() {
                     this.parentElement.style.transform = 'scale(1.02)';
@@ -325,9 +355,6 @@
             });
 
             // Form submission animation
-            const form = document.querySelector('form');
-            const submitBtn = document.querySelector('.btn-primary');
-
             form.addEventListener('submit', function() {
                 submitBtn.innerHTML = 'Registering...';
                 submitBtn.style.background = 'linear-gradient(135deg, #555, #777)';
@@ -335,14 +362,17 @@
 
             // Show/Hide password functionality
             function togglePassword(id) {
-                const passwordInput = document.getElementById(id);
-                const button = passwordInput.nextElementSibling;
-                if (passwordInput.type === 'password') {
-                    passwordInput.type = 'text';
-                    button.textContent = 'Hide';
-                } else {
-                    passwordInput.type = 'password';
-                    button.textContent = 'Show';
+                const input = document.getElementById(id);
+                // Find the button within the same parent div
+                const button = input.parentElement.querySelector('.show-password-btn');
+                if (input && button) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        button.textContent = 'Hide';
+                    } else {
+                        input.type = 'password';
+                        button.textContent = 'Show';
+                    }
                 }
             }
             window.togglePassword = togglePassword; // Expose to global scope
