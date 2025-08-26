@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql; // ✅ PostgreSQL provider
 using TrainBookinAppWeb.Data;
 using TrainBookingAppMVC.PasswordValidation;
 using TrainBookingAppMVC.Repository.Implementations;
@@ -9,12 +10,40 @@ using TrainBookingAppMVC.Services.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure EF Core with MySQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// ✅ Build PostgreSQL connection string from Render environment vars
+string BuildConnectionString(IConfiguration cfg)
+{
+    var host = Environment.GetEnvironmentVariable("DB_HOST");
+    var db = Environment.GetEnvironmentVariable("DB_NAME");
+    var user = Environment.GetEnvironmentVariable("DB_USERNAME");
+    var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
+    var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
 
+    if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(db) &&
+        !string.IsNullOrEmpty(user) && !string.IsNullOrEmpty(password))
+    {
+        var csb = new NpgsqlConnectionStringBuilder
+        {
+            Host = host,
+            Port = int.Parse(port),
+            Username = user,
+            Password = password,
+            Database = db,
+            SslMode = SslMode.Require,
+            TrustServerCertificate = true
+        };
+        return csb.ToString();
+    }
+
+    // fallback for local dev (appsettings.json)
+    return cfg.GetConnectionString("DefaultConnection");
+}
+
+var connectionString = BuildConnectionString(builder.Configuration);
+
+// ✅ Switch EF Core to PostgreSQL
 builder.Services.AddDbContext<TrainAppContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
-);
+    options.UseNpgsql(connectionString));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
