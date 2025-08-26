@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TrainBookinAppWeb.Data;
 using TrainBookingAppMVC.PasswordValidation;
 using TrainBookingAppMVC.Repository.Implementations;
@@ -47,9 +47,9 @@ builder.Services.AddAuthentication("Cookies")
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensure cookies are sent over HTTPS
-        options.Cookie.Name = "TrainBookingAppAuth"; // Unique cookie name
-        options.Cookie.SameSite = SameSiteMode.Lax; // Use Lax for development to allow cross-domain redirects
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.Name = "TrainBookingAppAuth";
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
 // Authorization Configuration
@@ -65,13 +65,17 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(15); // Shorter timeout to reduce overlap
+    options.IdleTimeout = TimeSpan.FromMinutes(15);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.Name = "TrainBookingAppSession"; // Unique session cookie name
-    options.Cookie.SameSite = SameSiteMode.Lax; // Use Lax for development
+    options.Cookie.Name = "TrainBookingAppSession";
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
+
+// 🔥 FIX: Set Render port BEFORE building the app
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
@@ -87,16 +91,12 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession(); // Enable session middleware
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
-app.Urls.Add($"http://*:{port}");
-
 
 app.Run();
