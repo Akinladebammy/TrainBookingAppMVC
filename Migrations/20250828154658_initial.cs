@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TrainBookingAppMVC.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -86,7 +86,7 @@ namespace TrainBookingAppMVC.Migrations
                     BookingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IsCancelled = table.Column<bool>(type: "boolean", nullable: false),
                     TransactionReference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false)
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -130,7 +130,7 @@ namespace TrainBookingAppMVC.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "Email", "FullName", "Password", "Role", "Salt", "Username" },
-                values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), "admin@gmail.com", "System Administrator", "E2FC50B23EF2BCAA345D89D80E3ACCF906BC7C1CCDFAEC5E485DBEC0ABEB2589", "Admin", new byte[] { 39, 255, 179, 38, 4, 236, 68, 160, 92, 23, 97, 156, 212, 159, 147, 19 }, "admin" });
+                values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), "admin@gmail.com", "System Administrator", "4D195057BA37B2270F886767457AAC2D9F9E6902183C1B9F2397B06DE772F839", "Admin", new byte[] { 181, 173, 107, 196, 182, 140, 211, 199, 149, 89, 20, 24, 129, 200, 134, 70 }, "admin" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Bookings_TripId",

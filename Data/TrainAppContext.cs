@@ -78,7 +78,10 @@ namespace TrainBookinAppWeb.Data
                 entity.Property(e => e.BookingDate).IsRequired();
                 entity.Property(e => e.SeatNumbers).IsRequired().HasMaxLength(255); // Updated to SeatNumbers
                 entity.Property(e => e.TicketClass).IsRequired().HasConversion<string>();
-                entity.Property(e => e.RowVersion).IsRowVersion();
+                entity.Property(e => e.RowVersion).IsRowVersion()
+                    .HasColumnName("xmin")
+                    .HasColumnType("xid")
+                    .IsRowVersion();
                 entity.Property(e => e.TransactionReference).HasMaxLength(100); // Added for Paystack
 
                 entity.HasOne(e => e.Trip)

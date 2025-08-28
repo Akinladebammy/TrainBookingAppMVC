@@ -34,7 +34,7 @@ namespace TrainBookinAppMVC.Models
         public DateTime BookingDate { get; set; } = DateTime.UtcNow;
         public bool IsCancelled { get; set; } = false;
         public string TransactionReference { get; set; }
-        public byte[] RowVersion { get; set; } = null!; // Added for concurrency
+        public uint RowVersion { get; set; }
 
         public virtual Trip Trip { get; set; } = null!;
         public virtual User User { get; set; } = null!;

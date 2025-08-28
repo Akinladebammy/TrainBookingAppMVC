@@ -38,11 +38,11 @@ namespace TrainBookingAppMVC.Migrations
                     b.Property<int>("NumberOfSeats")
                         .HasColumnType("integer");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<List<string>>("SeatNumbers")
                         .IsRequired()
@@ -247,9 +247,9 @@ namespace TrainBookingAppMVC.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Email = "admin@gmail.com",
                             FullName = "System Administrator",
-                            Password = "E2FC50B23EF2BCAA345D89D80E3ACCF906BC7C1CCDFAEC5E485DBEC0ABEB2589",
+                            Password = "4D195057BA37B2270F886767457AAC2D9F9E6902183C1B9F2397B06DE772F839",
                             Role = "Admin",
-                            Salt = new byte[] { 39, 255, 179, 38, 4, 236, 68, 160, 92, 23, 97, 156, 212, 159, 147, 19 },
+                            Salt = new byte[] { 181, 173, 107, 196, 182, 140, 211, 199, 149, 89, 20, 24, 129, 200, 134, 70 },
                             Username = "admin"
                         });
                 });
