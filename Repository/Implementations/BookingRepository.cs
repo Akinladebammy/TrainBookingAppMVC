@@ -215,9 +215,15 @@ namespace TrainBookingAppMVC.Repository.Implementations
 
                 return (true, $"Booking successful! {seatNumbers.Count} seats booked.", booking.Id);
             }
+            catch (DbUpdateException dbEx)
+            {
+                // Log inner exception
+                Console.WriteLine($"DbUpdateException: {dbEx.InnerException?.Message ?? dbEx.Message}");
+                return (false, $"Booking failed: {dbEx.InnerException?.Message ?? dbEx.Message}", Guid.Empty);
+            }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                Console.WriteLine($"General Exception: {ex.Message}, Inner: {ex.InnerException?.Message}");
                 return (false, $"Booking failed: {ex.Message}", Guid.Empty);
             }
         }
