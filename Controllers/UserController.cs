@@ -308,7 +308,7 @@ namespace TrainBookingAppMVC.Controllers
                 }
 
                 // Initialize Paystack payment
-                string callbackUrl = "https://train-g1mc.onrender.com//User/VerifyPayment";
+                string callbackUrl = "https://train-g1mc.onrender.com/User/VerifyPayment";
                 var paymentResult = await _paystackService.InitializePaymentAsync(
                     email: user.Data.Email,
                     amount: request.PaymentAmount,
