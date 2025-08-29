@@ -247,9 +247,9 @@ namespace TrainBookingAppMVC.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Email = "admin@gmail.com",
                             FullName = "System Administrator",
-                            Password = "4D195057BA37B2270F886767457AAC2D9F9E6902183C1B9F2397B06DE772F839",
+                            Password = "7CB69B148EC64AE498FFB0525484B8979E825EFABED0B91084486A9C534FFD34",
                             Role = "Admin",
-                            Salt = new byte[] { 181, 173, 107, 196, 182, 140, 211, 199, 149, 89, 20, 24, 129, 200, 134, 70 },
+                            Salt = new byte[] { 240, 11, 108, 139, 21, 217, 48, 149, 41, 14, 243, 49, 62, 63, 245, 166 },
                             Username = "admin"
                         });
                 });
