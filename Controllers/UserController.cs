@@ -532,7 +532,7 @@ namespace TrainBookingAppMVC.Controllers
                 Console.WriteLine($"VerifyPayment: Cleared TempData[{tempDataKey}]");
 
                 // Redirect to PaymentConfirmation using ngrok domain
-                var paymentConfirmationUrl = $"https://localhost:7256/User/PaymentConfirmation?bookingId={bookingResult.Data.BookingId}&tripId={bookingRequest.TripId}";
+                var paymentConfirmationUrl = $"https://train-g1mc.onrender.com/User/PaymentConfirmation?bookingId={bookingResult.Data.BookingId}&tripId={bookingRequest.TripId}";
                 Console.WriteLine($"VerifyPayment: Redirecting to {paymentConfirmationUrl}");
                 return Redirect(paymentConfirmationUrl);
             }
