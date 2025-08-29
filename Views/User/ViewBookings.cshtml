@@ -31,44 +31,46 @@
                 </div>
                 @if (Model.Bookings.Any())
                 {
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Train</th>
-                                <th>Route</th>
-                                <th>Departure</th>
-                                <th>Ticket Class</th>
-                                <th>Seats</th>
-                                <th>Total Price (₦)</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var booking in Model.Bookings)
-                            {
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
                                 <tr>
-                                    <td>@booking.TrainName (@booking.TrainNumber)</td>
-                                    <td>@booking.Source to @booking.Destination</td>
-                                    <td>@TimeZoneInfo.ConvertTimeFromUtc(booking.DepartureTime, timeZone).ToString("g")</td>
-                                    <td>@booking.TicketClass</td>
-                                    <td>@string.Join(", ", booking.SeatNumbers)</td>
-                                    <td>@booking.TotalPrice.ToString("F2")</td>
-                                    <td>@booking.TripStatus</td>
-                                    <td>
-                                        <a asp-action="BookingDetails" asp-route-id="@booking.Id" class="btn btn-info btn-sm custom-btn">Details</a>
-                                        @if (!booking.IsCancelled && !booking.IsExpired && booking.DepartureTime > DateTime.UtcNow)
-                                        {
-                                            <form asp-action="CancelBooking" asp-route-id="@booking.Id" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-danger btn-sm custom-btn" onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel</button>
-                                            </form>
-                                        }
-                                    </td>
+                                    <th>Train</th>
+                                    <th>Route</th>
+                                    <th>Departure</th>
+                                    <th>Ticket Class</th>
+                                    <th>Seats</th>
+                                    <th>Total Price (₦)</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var booking in Model.Bookings)
+                                {
+                                    <tr>
+                                        <td>@booking.TrainName (@booking.TrainNumber)</td>
+                                        <td>@booking.Source to @booking.Destination</td>
+                                        <td>@TimeZoneInfo.ConvertTimeFromUtc(booking.DepartureTime, timeZone).ToString("g")</td>
+                                        <td>@booking.TicketClass</td>
+                                        <td>@string.Join(", ", booking.SeatNumbers)</td>
+                                        <td>@booking.TotalPrice.ToString("F2")</td>
+                                        <td>@booking.TripStatus</td>
+                                        <td>
+                                            <a asp-action="BookingDetails" asp-route-id="@booking.Id" class="btn btn-info btn-sm custom-btn">Details</a>
+                                            @if (!booking.IsCancelled && !booking.IsExpired && booking.DepartureTime > DateTime.UtcNow)
+                                            {
+                                                <form asp-action="CancelBooking" asp-route-id="@booking.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger btn-sm custom-btn" onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel</button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 }
                 else
                 {
