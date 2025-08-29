@@ -45,27 +45,29 @@
                     <div class="row mt-3">
                         <div class="col-md-12">
                             <h5><strong>Pricing and Availability:</strong></h5>
-                            <table class="table table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Ticket Class</th>
-                                        <th>Price per Seat (₦)</th>
-                                        <th>Available Seats</th>
-                                        <th>Total Seats</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var pricing in trip.Pricings)
-                                    {
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
                                         <tr>
-                                            <td>@pricing.TicketClass</td>
-                                            <td>@pricing.Price.ToString("F2")</td>
-                                            <td>@pricing.AvailableSeats</td>
-                                            <td>@pricing.TotalSeats</td>
+                                            <th>Ticket Class</th>
+                                            <th>Price per Seat (₦)</th>
+                                            <th>Available Seats</th>
+                                            <th>Total Seats</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var pricing in trip.Pricings)
+                                        {
+                                            <tr>
+                                                <td>@pricing.TicketClass</td>
+                                                <td>@pricing.Price.ToString("F2")</td>
+                                                <td>@pricing.AvailableSeats</td>
+                                                <td>@pricing.TotalSeats</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 }
